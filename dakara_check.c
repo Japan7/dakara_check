@@ -3,12 +3,13 @@
 #include <libavutil/avutil.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 static const char *UNHANDLED_STREAM_MSG = "Unhandled stream type";
 static const char *LAVC_AAC_STREAM_MSG = "Lavc/FFMPEG AAC stream";
 static const char *TOO_MANY_AUDIO_STREAMS_MSG = "Too many audio streams";
 static const char *TOO_MANY_VIDEO_STREAMS_MSG = "Too many video streams";
-static const char *TOO_MANY_SUBTITLE_STREAMS_MSG = "Too many video streams";
+static const char *TOO_MANY_SUBTITLE_STREAMS_MSG = "Internal subtitle track should be removed";
 static const char *ATTACHMENT_STREAM_MSG = "Attachment found (probably a font)";
 
 struct dakara_check_results {
@@ -18,7 +19,7 @@ struct dakara_check_results {
   bool passed;
 };
 
-struct dakara_check_results *dakara_check(char *filepath) {
+struct dakara_check_results *dakara_check(char *filepath, int external_sub_file) {
   AVFormatContext *s = NULL;
   int ret, video_streams, audio_streams, sub_streams;
   int i;
@@ -66,7 +67,7 @@ struct dakara_check_results *dakara_check(char *filepath) {
       }
       break;
     case AVMEDIA_TYPE_SUBTITLE:
-      if (sub_streams++ > 0) {
+      if ((external_sub_file + sub_streams++) > 0) {
         res->streams[ui] = TOO_MANY_SUBTITLE_STREAMS_MSG;
         res->passed = false;
       }
@@ -113,6 +114,42 @@ void dakara_check_print_results(struct dakara_check_results *res,
   }
 }
 
+int dakara_check_sub_file(char *filepath) {
+  int ret;
+  AVFormatContext *s = NULL;
+
+  ret = avformat_open_input(&s, filepath, NULL, NULL);
+  // TODO: could check that it actually contains a sub stream
+  avformat_close_input(&s);
+  avformat_free_context(s);
+
+  return ret == 0;
+}
+
+int dakara_check_external_sub_file_for(char *filepath) {
+  char *filebasepath = strdup(filepath);
+  uint basepathlen = strlen(filepath);
+
+  while (filebasepath[basepathlen-1] != '.' && basepathlen > 0) {
+    basepathlen--;
+  }
+  filebasepath[basepathlen] = '\0';
+
+  char sub_filepath[basepathlen + 4];
+  // check .ass
+  snprintf(sub_filepath, basepathlen + 4, "%sass", filebasepath);
+  if (dakara_check_sub_file(sub_filepath)) {
+    free(filebasepath);
+    return 1;
+  }
+
+  // check .ssa
+  snprintf(sub_filepath, basepathlen + 4, "%sssa", filebasepath);
+
+  free(filebasepath);
+  return dakara_check_sub_file(sub_filepath);
+}
+
 int main(int argc, char *argv[]) {
   struct dakara_check_results *res;
 
@@ -121,7 +158,8 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  res = dakara_check(argv[1]);
+  int external_sub_file = dakara_check_external_sub_file_for(argv[1]);
+  res = dakara_check(argv[1], external_sub_file);
   if (res->passed) {
     dakara_check_results_free(res);
     return EXIT_SUCCESS;
