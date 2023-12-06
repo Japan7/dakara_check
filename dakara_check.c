@@ -105,11 +105,11 @@ void dakara_check_print_results(struct dakara_check_results *res,
                                 char *filepath) {
   uint i;
   if (res->general != NULL)
-    fprintf(stderr, "%s: %s\n", filepath, res->general);
+    printf("%s: %s\n", filepath, res->general);
 
   for (i = 0; i < res->n_streams; i++) {
     if (res->streams[i] != NULL)
-      fprintf(stderr, "%s: Stream %d: %s\n", filepath, i, res->streams[i]);
+      printf("%s: Stream %d: %s\n", filepath, i, res->streams[i]);
   }
 }
 
