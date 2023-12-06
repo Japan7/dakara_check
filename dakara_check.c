@@ -138,6 +138,10 @@ int dakara_check_external_sub_file_for(char *filepath) {
   char sub_filepath[basepathlen + 4];
   // check .ass
   snprintf(sub_filepath, basepathlen + 4, "%sass", filebasepath);
+  // return false if the original file is already the .ass
+  if (strcmp(sub_filepath, filepath) == 0)
+    return 0;
+
   if (dakara_check_sub_file(sub_filepath)) {
     free(filebasepath);
     return 1;
@@ -145,6 +149,9 @@ int dakara_check_external_sub_file_for(char *filepath) {
 
   // check .ssa
   snprintf(sub_filepath, basepathlen + 4, "%sssa", filebasepath);
+  // return false if the original file is already the .ssa
+  if (strcmp(sub_filepath, filepath) == 0)
+    return 0;
 
   free(filebasepath);
   return dakara_check_sub_file(sub_filepath);
