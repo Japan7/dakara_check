@@ -9,6 +9,7 @@ static const char *LAVC_AAC_STREAM_MSG = "Lavc/FFMPEG AAC stream";
 static const char *TOO_MANY_AUDIO_STREAMS_MSG = "Too many audio streams";
 static const char *TOO_MANY_VIDEO_STREAMS_MSG = "Too many video streams";
 static const char *TOO_MANY_SUBTITLE_STREAMS_MSG = "Too many video streams";
+static const char *ATTACHMENT_STREAM_MSG = "Attachment found (probably a font)";
 
 struct dakara_check_results {
   const char *general;
@@ -69,6 +70,10 @@ struct dakara_check_results *dakara_check(char *filepath) {
         res->streams[ui] = TOO_MANY_SUBTITLE_STREAMS_MSG;
         res->passed = false;
       }
+      break;
+    case AVMEDIA_TYPE_ATTACHMENT:
+      res->streams[ui] = ATTACHMENT_STREAM_MSG;
+      res->passed = false;
       break;
     default:
       res->streams[ui] = UNHANDLED_STREAM_MSG;
