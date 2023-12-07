@@ -5,10 +5,9 @@ libavdeps += dependency('libavformat')
 libavdeps += dependency('libavutil')
 libavdeps += dependency('libavcodec')
 
-cc = meson.get_compiler('c')
-ffmpegaacsucks = cc.find_library('ffmpegaacsucks', required: true)
+ffmpegaacsucks_dep = dependency('ffmpegaacsucks')
 
-deps = libavdeps + ffmpegaacsucks
+deps = libavdeps + ffmpegaacsucks_dep
 
 dakara_check_exe = executable(
   'dakara_check',
