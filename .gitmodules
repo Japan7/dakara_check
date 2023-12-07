@@ -1,0 +1,3 @@
+[submodule "subprojects/ffmpegaacsucks"]
+	path = subprojects/ffmpegaacsucks
+	url = https://git.odrling.xyz/ffmpegaacsucks
