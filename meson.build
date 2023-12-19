@@ -7,6 +7,8 @@ libavdeps += dependency('libavutil')
 ffmpegaacsucks_dep = dependency('ffmpegaacsucks',
                                 fallback: ['ffmpegaacsucks', 'ffmpegaacsucks_dep'])
 
+version_h = vcs_tag(input: 'version.h.in', output: 'version.h')
+
 deps = libavdeps + ffmpegaacsucks_dep
 
 install_headers('dakara_check.h')
@@ -14,6 +16,7 @@ install_headers('dakara_check.h')
 libdakara_check = library(
   'dakara_check',
   'libdakara_check.c',
+  version_h,
   dependencies: deps,
   install: true,
 )

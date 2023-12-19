@@ -15,6 +15,11 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
+  if (strcmp(argv[1], "--version") == 0) {
+    printf("dakara_check %s\n", dakara_check_version());
+    return EXIT_SUCCESS;
+  }
+
   int external_sub_file = dakara_check_external_sub_file_for(argv[1]);
   res = dakara_check(argv[1], external_sub_file);
   if (res->passed) {

@@ -14,6 +14,8 @@ struct dakara_check_results {
   bool passed;
 };
 
+const char *dakara_check_version();
+
 struct dakara_check_results *dakara_check(char *filepath, int external_sub_file);
 
 void dakara_check_results_free(struct dakara_check_results *res);

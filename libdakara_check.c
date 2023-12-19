@@ -7,6 +7,11 @@
 #include <string.h>
 
 #include "dakara_check.h"
+#include "version.h"
+
+const char *dakara_check_version() {
+  return DAKARA_CHECK_VERSION;
+}
 
 
 #define UNHANDLED_STREAM_MSG "Unhandled stream type";
