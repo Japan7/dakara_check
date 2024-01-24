@@ -19,6 +19,8 @@ libdakara_check = library(
   version_h,
   dependencies: deps,
   install: true,
+  version: meson.project_version(),
+  soversion: '1',
 )
 
 dakara_check_exe = executable(
