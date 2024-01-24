@@ -7,7 +7,7 @@ libavdeps += dependency('libavutil')
 ffmpegaacsucks_dep = dependency('ffmpegaacsucks',
                                 fallback: ['ffmpegaacsucks', 'ffmpegaacsucks_dep'])
 
-version_h = vcs_tag(input: 'version.h.in', output: 'version.h')
+version_h = vcs_tag(command: ['git', 'describe'], input: 'version.h.in', output: 'version.h')
 
 deps = libavdeps + ffmpegaacsucks_dep
 
