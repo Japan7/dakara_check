@@ -1,4 +1,4 @@
-project('dakara_check', 'c', version: '1.0.0')
+project('dakara_check', 'c', version: '1.0.1')
 
 libavdeps = []
 libavdeps += dependency('libavformat')
