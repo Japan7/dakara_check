@@ -7,9 +7,6 @@
 #include <string.h>
 
 #include "dakara_check.h"
-#include "version.h"
-
-const char *dakara_check_version() { return DAKARA_CHECK_VERSION; }
 
 struct dakara_check_results *dakara_check(char *filepath,
                                           int external_sub_file) {
@@ -86,12 +83,6 @@ struct dakara_check_results *dakara_check(char *filepath,
   avformat_free_context(s);
 
   return res;
-}
-
-void dakara_check_results_free(struct dakara_check_results *res) {
-  if (res->streams != NULL)
-    free(res->streams);
-  free(res);
 }
 
 void dakara_check_print_results(struct dakara_check_results *res,

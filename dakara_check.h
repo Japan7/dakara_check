@@ -7,6 +7,8 @@
 #include <libavutil/avutil.h>
 #include <stdbool.h>
 
+#include "version.h"
+
 enum dakara_stream_result {
   OK,
   UNHANDLED_STREAM,
@@ -33,12 +35,18 @@ struct dakara_check_results {
   bool passed;
 };
 
-const char *dakara_check_version();
+static inline void dakara_check_results_free(struct dakara_check_results *res) {
+  if (res->streams != NULL)
+    free(res->streams);
+  free(res);
+}
+
+static inline const char *dakara_check_version() {
+  return DAKARA_CHECK_VERSION;
+}
 
 struct dakara_check_results *dakara_check(char *filepath,
                                           int external_sub_file);
-
-void dakara_check_results_free(struct dakara_check_results *res);
 
 void dakara_check_print_results(struct dakara_check_results *res,
                                 char *filepath);
