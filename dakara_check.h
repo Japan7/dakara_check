@@ -7,8 +7,6 @@
 #include <libavutil/avutil.h>
 #include <stdbool.h>
 
-#include "version.h"
-
 enum dakara_stream_result {
   OK,
   UNHANDLED_STREAM,
