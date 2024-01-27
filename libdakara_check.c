@@ -11,14 +11,6 @@
 
 const char *dakara_check_version() { return DAKARA_CHECK_VERSION; }
 
-#define UNHANDLED_STREAM_MSG "Unhandled stream type";
-#define LAVC_AAC_STREAM_MSG "Lavc/FFMPEG AAC stream";
-#define TOO_MANY_AUDIO_STREAMS_MSG "Too many audio streams";
-#define TOO_MANY_VIDEO_STREAMS_MSG "Too many video streams";
-#define TOO_MANY_SUBTITLE_STREAMS_MSG                                          \
-  "Internal subtitle track should be removed";
-#define ATTACHMENT_STREAM_MSG "Attachment found (probably a font)";
-
 struct dakara_check_results *dakara_check(char *filepath,
                                           int external_sub_file) {
   AVFormatContext *s = NULL;
@@ -32,7 +24,6 @@ struct dakara_check_results *dakara_check(char *filepath,
   res->passed = true;
   res->n_streams = 0;
   res->streams = NULL;
-  res->general = NULL;
 
   ret = avformat_open_input(&s, filepath, NULL, NULL);
   if (ret < 0) {
@@ -47,7 +38,7 @@ struct dakara_check_results *dakara_check(char *filepath,
   res->n_streams = s->nb_streams;
   res->streams = malloc(sizeof(char *) * res->n_streams);
   for (ui = 0; ui < res->n_streams; ui++)
-    res->streams[ui] = NULL;
+    res->streams[ui] = OK;
 
   for (ui = 0; ui < s->nb_streams; ui++) {
     AVStream *st = s->streams[ui];
@@ -56,29 +47,29 @@ struct dakara_check_results *dakara_check(char *filepath,
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
       if (video_streams++ > 0) {
-        res->streams[ui] = TOO_MANY_VIDEO_STREAMS_MSG;
+        res->streams[ui] = TOO_MANY_VIDEO_STREAMS;
         res->passed = false;
       }
       break;
     case AVMEDIA_TYPE_AUDIO:
       // we allow 2 audio streams for instrumentals
       if (audio_streams++ > 1) {
-        res->streams[ui] = TOO_MANY_AUDIO_STREAMS_MSG;
+        res->streams[ui] = TOO_MANY_AUDIO_STREAMS;
         res->passed = false;
       }
       break;
     case AVMEDIA_TYPE_SUBTITLE:
       if ((external_sub_file + sub_streams++) > 0) {
-        res->streams[ui] = TOO_MANY_SUBTITLE_STREAMS_MSG;
+        res->streams[ui] = TOO_MANY_SUBTITLE_STREAMS;
         res->passed = false;
       }
       break;
     case AVMEDIA_TYPE_ATTACHMENT:
-      res->streams[ui] = ATTACHMENT_STREAM_MSG;
+      res->streams[ui] = ATTACHMENT_STREAM;
       res->passed = false;
       break;
     default:
-      res->streams[ui] = UNHANDLED_STREAM_MSG;
+      res->streams[ui] = UNHANDLED_STREAM;
       res->passed = false;
     }
   }
@@ -87,7 +78,7 @@ struct dakara_check_results *dakara_check(char *filepath,
   if (ffaac_res->n_streams > 0) {
     res->passed = false;
     for (i = 0; i < ffaac_res->n_streams; i++)
-      res->streams[ffaac_res->streams[i]] = LAVC_AAC_STREAM_MSG;
+      res->streams[ffaac_res->streams[i]] = LAVC_AAC_STREAM;
   }
   ffaacsucks_result_free(ffaac_res);
 
@@ -106,12 +97,11 @@ void dakara_check_results_free(struct dakara_check_results *res) {
 void dakara_check_print_results(struct dakara_check_results *res,
                                 char *filepath) {
   uint i;
-  if (res->general != NULL)
-    printf("%s: %s\n", filepath, res->general);
 
   for (i = 0; i < res->n_streams; i++) {
-    if (res->streams[i] != NULL)
-      printf("%s: Stream %d: %s\n", filepath, i, res->streams[i]);
+    if (res->streams[i] != OK)
+      printf("%s: Stream %d: %s\n", filepath, i,
+             dakara_results_error_reports[res->streams[i]]);
   }
 }
 

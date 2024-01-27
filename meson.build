@@ -1,4 +1,4 @@
-project('dakara_check', 'c', version: '1.0.1')
+project('dakara_check', 'c', version: '2.0.0')
 
 libavdeps = []
 libavdeps += dependency('libavformat')
@@ -21,7 +21,7 @@ libdakara_check = library(
   dependencies: deps,
   install: true,
   version: meson.project_version(),
-  soversion: '1',
+  soversion: '2',
 )
 
 dakara_check_exe = executable(
