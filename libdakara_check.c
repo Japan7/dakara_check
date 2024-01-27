@@ -8,6 +8,10 @@
 
 #include "dakara_check.h"
 
+#include "version.h"
+
+const char *dakara_check_version() { return DAKARA_CHECK_VERSION; }
+
 struct dakara_check_results *dakara_check(char *filepath,
                                           int external_sub_file) {
   AVFormatContext *s = NULL;
