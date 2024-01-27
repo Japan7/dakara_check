@@ -9,20 +9,18 @@
 #include "dakara_check.h"
 #include "version.h"
 
-const char *dakara_check_version() {
-  return DAKARA_CHECK_VERSION;
-}
-
+const char *dakara_check_version() { return DAKARA_CHECK_VERSION; }
 
 #define UNHANDLED_STREAM_MSG "Unhandled stream type";
 #define LAVC_AAC_STREAM_MSG "Lavc/FFMPEG AAC stream";
 #define TOO_MANY_AUDIO_STREAMS_MSG "Too many audio streams";
 #define TOO_MANY_VIDEO_STREAMS_MSG "Too many video streams";
-#define TOO_MANY_SUBTITLE_STREAMS_MSG "Internal subtitle track should be removed";
+#define TOO_MANY_SUBTITLE_STREAMS_MSG                                          \
+  "Internal subtitle track should be removed";
 #define ATTACHMENT_STREAM_MSG "Attachment found (probably a font)";
 
-
-struct dakara_check_results *dakara_check(char *filepath, int external_sub_file) {
+struct dakara_check_results *dakara_check(char *filepath,
+                                          int external_sub_file) {
   AVFormatContext *s = NULL;
   int ret, video_streams, audio_streams, sub_streams;
   int i;
@@ -133,7 +131,7 @@ int dakara_check_external_sub_file_for(char *filepath) {
   char *filebasepath = strdup(filepath);
   uint basepathlen = strlen(filepath);
 
-  while (filebasepath[basepathlen-1] != '.' && basepathlen > 0) {
+  while (filebasepath[basepathlen - 1] != '.' && basepathlen > 0) {
     basepathlen--;
   }
   filebasepath[basepathlen] = '\0';
@@ -159,4 +157,3 @@ int dakara_check_external_sub_file_for(char *filepath) {
   free(filebasepath);
   return dakara_check_sub_file(sub_filepath);
 }
-
