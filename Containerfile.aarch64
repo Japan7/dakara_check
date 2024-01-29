@@ -1,0 +1,11 @@
+FROM ghcr.io/odrling/gentoo-crossdev-images:aarch64-llvm17 AS builder 
+
+COPY . /ffmpegaacsucks
+
+RUN cd /ffmpegaacsucks && /ffmpegaacsucks/ci/build.sh --cross-file ci/aarch64-unknown-linux-musl.txt
+
+FROM alpine
+
+COPY --from=builder /ffmpegaacsucks/dest/ /
+ENTRYPOINT ["/usr/local/bin/ffmpegaacsucks"]
+

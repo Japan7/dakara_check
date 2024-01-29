@@ -10,14 +10,11 @@ else
   version_h = vcs_tag(input: 'version.h.in', output:'version.h')
 endif
 
-libavdeps = []
-libavdeps += dependency('libavformat', fallback: ['ffmpeg', 'libavformat_dep'])
-libavdeps += dependency('libavutil', fallback: ['ffmpeg', 'libavutil_dep'])
+deps = []
+deps += dependency('libavformat', fallback: ['ffmpeg', 'libavformat_dep'])
+deps += dependency('libavutil', fallback: ['ffmpeg', 'libavutil_dep'])
 
-ffmpegaacsucks_dep = dependency('ffmpegaacsucks',
-                                fallback: ['ffmpegaacsucks', 'ffmpegaacsucks_dep'])
-
-deps = libavdeps + ffmpegaacsucks_dep
+deps += dependency('ffmpegaacsucks', fallback: ['ffmpegaacsucks', 'ffmpegaacsucks_dep'])
 
 install_headers('dakara_check.h')
 
