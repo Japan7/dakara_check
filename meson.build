@@ -11,8 +11,8 @@ else
 endif
 
 libavdeps = []
-libavdeps += dependency('libavformat')
-libavdeps += dependency('libavutil')
+libavdeps += dependency('libavformat', fallback: ['ffmpeg', 'libavformat_dep'])
+libavdeps += dependency('libavutil', fallback: ['ffmpeg', 'libavutil_dep'])
 
 ffmpegaacsucks_dep = dependency('ffmpegaacsucks',
                                 fallback: ['ffmpegaacsucks', 'ffmpegaacsucks_dep'])
