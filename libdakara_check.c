@@ -17,7 +17,6 @@ struct dakara_check_results *dakara_check(char *filepath,
   AVFormatContext *s = NULL;
   int ret, video_streams, audio_streams, sub_streams;
   int i;
-  uint ui;
   struct ffaacsucks_result *ffaac_res;
   struct dakara_check_results *res;
 
@@ -38,6 +37,8 @@ struct dakara_check_results *dakara_check(char *filepath,
   sub_streams = 0;
   res->n_streams = s->nb_streams;
   res->streams = malloc(sizeof(char *) * res->n_streams);
+
+  unsigned int ui;
   for (ui = 0; ui < res->n_streams; ui++)
     res->streams[ui] = OK;
 
@@ -91,12 +92,11 @@ struct dakara_check_results *dakara_check(char *filepath,
 
 void dakara_check_print_results(struct dakara_check_results *res,
                                 char *filepath) {
-  uint i;
-
-  for (i = 0; i < res->n_streams; i++) {
-    if (res->streams[i] != OK)
-      printf("%s: Stream %d: %s\n", filepath, i,
-             dakara_results_error_reports[res->streams[i]]);
+  unsigned int ui;
+  for (ui = 0; ui < res->n_streams; ui++) {
+    if (res->streams[ui] != OK)
+      printf("%s: Stream %d: %s\n", filepath, ui,
+             dakara_results_error_reports[res->streams[ui]]);
   }
 }
 
@@ -114,7 +114,7 @@ int dakara_check_sub_file(char *filepath) {
 
 int dakara_check_external_sub_file_for(char *filepath) {
   char *filebasepath = strdup(filepath);
-  uint basepathlen = strlen(filepath);
+  unsigned int basepathlen = strlen(filepath);
 
   while (filebasepath[basepathlen - 1] != '.' && basepathlen > 0) {
     basepathlen--;
