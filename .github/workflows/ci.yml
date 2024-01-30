@@ -28,10 +28,8 @@ jobs:
       matrix:
         config:
           - arch: x86_64
-            containerfile: Containerfile
             platform: linux/amd64
           - arch: aarch64
-            containerfile: Containerfile.aarch64
             platform: linux/arm64
 
     steps:
@@ -58,7 +56,8 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: ${{ github.sha }}-${{ matrix.config.arch }}
           labels: ${{ steps.meta.outputs.labels }}
-          containerfiles: ${{ matrix.config.containerfile }}
+          build-args: ARCH=${{ matrix.config.arch }}
+          containerfiles: Containerfile
 
       - name: Push image
         id: push-image

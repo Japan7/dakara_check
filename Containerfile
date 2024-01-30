@@ -1,9 +1,10 @@
-FROM alpine AS builder 
-RUN apk add musl-dev meson clang compiler-rt git linux-headers lld tar
+ARG ARCH
+FROM ghcr.io/odrling/gentoo-crossdev-images:$ARCH-llvm17 AS builder 
 
 COPY . /dakara_check
 
-RUN cd /dakara_check && /dakara_check/ci/build.sh
+ARG ARCH
+RUN cd /dakara_check && /dakara_check/ci/build.sh --cross-file ci/$ARCH-unknown-linux-musl.txt
 
 FROM alpine
 

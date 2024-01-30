@@ -1,0 +1,13 @@
+[binaries]
+c = 'x86_64-unknown-linux-musl-clang'
+ld = 'ld.lld'
+objcopy = 'llvm-objcopy'
+strip = 'llvm-strip'
+pkg-config = 'x86_64-unknown-linux-musl-pkg-config'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
