@@ -1,4 +1,4 @@
-project('dakara_check', 'c', version: '2.0.3')
+project('dakara_check', 'c', version: '3.0.0')
 
 git = find_program('git', required: false)
 
@@ -25,7 +25,7 @@ libdakara_check = library(
   dependencies: deps,
   install: true,
   version: meson.project_version(),
-  soversion: '2',
+  soversion: '3',
 )
 
 dakara_check_exe = executable(

@@ -71,7 +71,7 @@ struct dakara_check_results *dakara_check(char *filepath,
       res->passed = false;
       break;
     default:
-      res->streams[ui] = UNHANDLED_STREAM;
+      res->streams[ui] = UNKNOWN_STREAM;
       res->passed = false;
     }
   }
@@ -94,9 +94,12 @@ void dakara_check_print_results(struct dakara_check_results *res,
                                 char *filepath) {
   unsigned int ui;
   for (ui = 0; ui < res->n_streams; ui++) {
-    if (res->streams[ui] != OK)
-      printf("%s: Stream %d: %s\n", filepath, ui,
-             dakara_results_error_reports[res->streams[ui]]);
+    if (res->streams[ui] != OK) {
+      struct dakara_check_report report =
+          dakara_results_error_reports[res->streams[ui]];
+      printf("%s: Stream %d (error level %d): %s\n", filepath, ui,
+             report.error_level, report.message);
+    }
   }
 }
 

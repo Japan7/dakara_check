@@ -9,7 +9,7 @@
 
 enum dakara_stream_result {
   OK,
-  UNHANDLED_STREAM,
+  UNKNOWN_STREAM,
   LAVC_AAC_STREAM,
   TOO_MANY_AUDIO_STREAMS,
   TOO_MANY_VIDEO_STREAMS,
@@ -17,14 +17,25 @@ enum dakara_stream_result {
   ATTACHMENT_STREAM,
 };
 
-static char const *const dakara_results_error_reports[] = {
-    [OK] = "OK",
-    [UNHANDLED_STREAM] = "Unhandled stream type",
-    [LAVC_AAC_STREAM] = "Lavc/FFMPEG AAC stream",
-    [TOO_MANY_AUDIO_STREAMS] = "Too many audio streams",
-    [TOO_MANY_VIDEO_STREAMS] = "Too many video streams",
-    [TOO_MANY_SUBTITLE_STREAMS] = "Internal subtitle track should be removed",
-    [ATTACHMENT_STREAM] = "Attachment found (probably a font)",
+enum dakara_check_error_level {
+  NONE,
+  WARNING,
+  ERROR,
+};
+
+struct dakara_check_report {
+  char const *const message;
+  enum dakara_check_error_level error_level;
+};
+
+static struct dakara_check_report dakara_results_error_reports[] = {
+    [OK] = {"OK", NONE},
+    [UNKNOWN_STREAM] = {"Unknown stream type", WARNING},
+    [LAVC_AAC_STREAM] = {"Lavc/FFMPEG AAC stream", ERROR},
+    [TOO_MANY_AUDIO_STREAMS] = {"Too many audio streams", ERROR},
+    [TOO_MANY_VIDEO_STREAMS] = {"Too many video streams", ERROR},
+    [TOO_MANY_SUBTITLE_STREAMS] = {"Internal subtitle track should be removed", ERROR},
+    [ATTACHMENT_STREAM] = {"Attachment found (probably a font)", ERROR},
 };
 
 struct dakara_check_results {
