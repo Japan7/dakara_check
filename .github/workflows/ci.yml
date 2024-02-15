@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - master
+      - renovate/*
 
 jobs:
   build:
@@ -74,6 +75,7 @@ jobs:
   push_manifest:
     needs: build
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
 
     permissions:
       contents: read
@@ -104,4 +106,3 @@ jobs:
           podman manifest add $image_base ${{ env.REGISTRY }}/$image_base_sha-aarch64
           podman manifest push $image_base ${{ env.REGISTRY }}/$image_base_sha
           podman manifest push $image_base ${{ env.REGISTRY }}/$image_base:${{ github.ref_name }}
-
