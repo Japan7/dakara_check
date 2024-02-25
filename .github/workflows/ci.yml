@@ -32,6 +32,8 @@ jobs:
             platform: linux/amd64
           - arch: aarch64
             platform: linux/arm64
+          - arch: riscv64
+            platform: linux/riscv64
 
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +104,9 @@ jobs:
           podman manifest create $image_base
           podman pull ${{ env.REGISTRY }}/$image_base_sha-x86_64
           podman pull ${{ env.REGISTRY }}/$image_base_sha-aarch64
+          podman pull ${{ env.REGISTRY }}/$image_base_sha-riscv64
           podman manifest add $image_base ${{ env.REGISTRY }}/$image_base_sha-x86_64
           podman manifest add $image_base ${{ env.REGISTRY }}/$image_base_sha-aarch64
+          podman manifest add $image_base ${{ env.REGISTRY }}/$image_base_sha-riscv64
           podman manifest push $image_base ${{ env.REGISTRY }}/$image_base_sha
           podman manifest push $image_base ${{ env.REGISTRY }}/$image_base:${{ github.ref_name }}
