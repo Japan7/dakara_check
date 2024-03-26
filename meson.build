@@ -1,4 +1,5 @@
-project('dakara_check', 'c', version: '3.0.0')
+project('dakara_check', 'c', version: '3.0.0',
+        default_options: ['warning_level=3', 'c_std=gnu17'])
 
 git = find_program('git', required: false)
 
