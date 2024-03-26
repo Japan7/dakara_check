@@ -2,7 +2,6 @@
 export LDFLAGS="-Wl,-Bsymbolic"
 
 if [ "$ARCH" != x86_64 ]; then
-    apk add "base-cross-$ARCH" "clang-rt-cross-$ARCH" "clang-rt-crt-cross-$ARCH" 
     extra_args="--cross-file ci/$ARCH-chimera-linux-musl.txt"
 fi
 

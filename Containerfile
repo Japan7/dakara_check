@@ -1,7 +1,5 @@
-FROM ghcr.io/odrling/chimera:x86_64 AS builder
+FROM ghcr.io/odrling/chimera:cross AS builder
 ARG ARCH
-
-RUN apk add base-devel-static meson clang git lld
 
 COPY . /dakara_check
 
