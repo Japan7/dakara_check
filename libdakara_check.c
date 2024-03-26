@@ -10,7 +10,7 @@
 
 #include "version.h"
 
-const char *dakara_check_version() { return DAKARA_CHECK_VERSION; }
+const char *dakara_check_version(void) { return DAKARA_CHECK_VERSION; }
 
 struct dakara_check_results *dakara_check(char *filepath,
                                           int external_sub_file) {

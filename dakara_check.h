@@ -50,7 +50,7 @@ static inline void dakara_check_results_free(struct dakara_check_results *res) {
   free(res);
 }
 
-const char *dakara_check_version();
+const char *dakara_check_version(void);
 
 struct dakara_check_results *dakara_check(char *filepath,
                                           int external_sub_file);
