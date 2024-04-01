@@ -16,18 +16,16 @@
 const char *dakara_check_version(void) { return DAKARA_CHECK_VERSION; }
 
 struct dakara_check_results *dakara_check_results_new(void) {
-  struct dakara_check_results *res =
-      malloc(sizeof(struct dakara_check_results));
+  struct dakara_check_results *res = malloc(sizeof(struct dakara_check_results));
   res->passed = true;
   res->n_streams = 0;
   res->streams = NULL;
   return res;
 }
 
-struct dakara_check_results *
-dakara_check_avio(size_t buffer_size, void *readable,
-                  int (*read_packet)(void *, uint8_t *, int),
-                  int64_t (*seek)(void *, int64_t, int)) {
+struct dakara_check_results *dakara_check_avio(size_t buffer_size, void *readable,
+                                               int (*read_packet)(void *, uint8_t *, int),
+                                               int64_t (*seek)(void *, int64_t, int)) {
   AVFormatContext *fmt_ctx = NULL;
   AVIOContext *avio_ctx = NULL;
   struct dakara_check_results *res = dakara_check_results_new();
@@ -38,8 +36,7 @@ dakara_check_avio(size_t buffer_size, void *readable,
     goto end;
   }
 
-  avio_ctx = avio_alloc_context(avio_ctx_buffer, buffer_size, 0, readable,
-                                read_packet, NULL, seek);
+  avio_ctx = avio_alloc_context(avio_ctx_buffer, buffer_size, 0, readable, read_packet, NULL, seek);
   if (avio_ctx == NULL) {
     perror("could not allocate AVIO context");
     goto end;
@@ -71,8 +68,7 @@ end:
   return res;
 }
 
-static void dakara_check_avf(AVFormatContext *s,
-                             struct dakara_check_results *res,
+static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *res,
                              unsigned int external_sub_file) {
   unsigned int video_streams = 0;
   unsigned int audio_streams = 0;
@@ -128,8 +124,7 @@ static void dakara_check_avf(AVFormatContext *s,
   ffaacsucks_result_free(ffaac_res);
 }
 
-struct dakara_check_results *dakara_check(char *filepath,
-                                          unsigned int external_sub_file) {
+struct dakara_check_results *dakara_check(char *filepath, unsigned int external_sub_file) {
   AVFormatContext *s = NULL;
   struct dakara_check_results *res = dakara_check_results_new();
 
@@ -148,14 +143,13 @@ struct dakara_check_results *dakara_check(char *filepath,
   return res;
 }
 
-void dakara_check_print_results(struct dakara_check_results *res,
-                                char *filepath) {
+void dakara_check_print_results(struct dakara_check_results *res, char *filepath) {
   unsigned int ui;
   for (ui = 0; ui < res->n_streams; ui++) {
     if (res->streams[ui] != OK) {
       struct dakara_check_report report = dakara_check_get_report(res->streams[ui]);
-      printf("%s: Stream %d (error level %d): %s\n", filepath, ui,
-             report.error_level, report.message);
+      printf("%s: Stream %d (error level %d): %s\n", filepath, ui, report.error_level,
+             report.message);
     }
   }
 }

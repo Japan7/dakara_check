@@ -46,11 +46,9 @@ static inline void dakara_check_results_free(struct dakara_check_results *res) {
 
 const char *dakara_check_version(void);
 
-struct dakara_check_results *dakara_check(char *filepath,
-                                          unsigned int external_sub_file);
+struct dakara_check_results *dakara_check(char *filepath, unsigned int external_sub_file);
 
-void dakara_check_print_results(struct dakara_check_results *res,
-                                char *filepath);
+void dakara_check_print_results(struct dakara_check_results *res, char *filepath);
 
 int dakara_check_sub_file(char *filepath);
 
