@@ -28,15 +28,7 @@ struct dakara_check_report {
   enum dakara_check_error_level error_level;
 };
 
-struct dakara_check_report dakara_results_error_reports[] = {
-    [OK] = {"OK", NONE},
-    [UNKNOWN_STREAM] = {"Unknown stream type", WARNING},
-    [LAVC_AAC_STREAM] = {"Lavc/FFMPEG AAC stream", ERROR},
-    [TOO_MANY_AUDIO_STREAMS] = {"Too many audio streams", ERROR},
-    [TOO_MANY_VIDEO_STREAMS] = {"Too many video streams", ERROR},
-    [TOO_MANY_SUBTITLE_STREAMS] = {"Internal subtitle track should be removed", ERROR},
-    [ATTACHMENT_STREAM] = {"Attachment found (probably a font)", ERROR},
-};
+struct dakara_check_report dakara_check_get_report(enum dakara_stream_result res);
 
 struct dakara_check_results {
   enum dakara_stream_result *streams;

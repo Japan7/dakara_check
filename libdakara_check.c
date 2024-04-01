@@ -153,8 +153,7 @@ void dakara_check_print_results(struct dakara_check_results *res,
   unsigned int ui;
   for (ui = 0; ui < res->n_streams; ui++) {
     if (res->streams[ui] != OK) {
-      struct dakara_check_report report =
-          dakara_results_error_reports[res->streams[ui]];
+      struct dakara_check_report report = dakara_check_get_report(res->streams[ui]);
       printf("%s: Stream %d (error level %d): %s\n", filepath, ui,
              report.error_level, report.message);
     }
@@ -202,4 +201,18 @@ int dakara_check_external_sub_file_for(char *filepath) {
 
   free(filebasepath);
   return dakara_check_sub_file(sub_filepath);
+}
+
+static struct dakara_check_report dakara_results_error_reports[] = {
+    [OK] = {"OK", NONE},
+    [UNKNOWN_STREAM] = {"Unknown stream type", WARNING},
+    [LAVC_AAC_STREAM] = {"Lavc/FFMPEG AAC stream", ERROR},
+    [TOO_MANY_AUDIO_STREAMS] = {"Too many audio streams", ERROR},
+    [TOO_MANY_VIDEO_STREAMS] = {"Too many video streams", ERROR},
+    [TOO_MANY_SUBTITLE_STREAMS] = {"Internal subtitle track should be removed", ERROR},
+    [ATTACHMENT_STREAM] = {"Attachment found (probably a font)", ERROR},
+};
+
+struct dakara_check_report dakara_check_get_report(enum dakara_stream_result res) {
+  return dakara_results_error_reports[res];
 }
