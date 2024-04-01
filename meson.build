@@ -15,7 +15,9 @@ deps = []
 deps += dependency('libavformat', fallback: ['ffmpeg', 'libavformat_dep'])
 deps += dependency('libavutil', fallback: ['ffmpeg', 'libavutil_dep'])
 
-deps += dependency('ffmpegaacsucks', fallback: ['ffmpegaacsucks', 'ffmpegaacsucks_dep'])
+deps += dependency('ffmpegaacsucks',
+                   version: '>=2.0.0',
+                   fallback: ['ffmpegaacsucks', 'ffmpegaacsucks_dep'])
 
 install_headers('dakara_check.h')
 
