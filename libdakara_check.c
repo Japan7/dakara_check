@@ -210,3 +210,9 @@ static struct dakara_check_report dakara_results_error_reports[] = {
 struct dakara_check_report dakara_check_get_report(enum dakara_stream_result res) {
   return dakara_results_error_reports[res];
 }
+
+void dakara_check_results_free(struct dakara_check_results *res) {
+  if (res->streams != NULL)
+    free(res->streams);
+  free(res);
+}

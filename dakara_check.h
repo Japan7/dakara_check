@@ -38,11 +38,7 @@ struct dakara_check_results {
 
 struct dakara_check_results *dakara_check_results_new(void);
 
-static inline void dakara_check_results_free(struct dakara_check_results *res) {
-  if (res->streams != NULL)
-    free(res->streams);
-  free(res);
-}
+void dakara_check_results_free(struct dakara_check_results *res);
 
 const char *dakara_check_version(void);
 
