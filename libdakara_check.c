@@ -1,8 +1,11 @@
 
 #include <ffmpegaacsucks.h>
 #include <libavformat/avformat.h>
+#include <libavformat/avio.h>
 #include <libavutil/avutil.h>
+#include <libavutil/mem.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -12,29 +15,69 @@
 
 const char *dakara_check_version(void) { return DAKARA_CHECK_VERSION; }
 
-struct dakara_check_results *dakara_check(char *filepath,
-                                          int external_sub_file) {
-  AVFormatContext *s = NULL;
-  int ret, video_streams, audio_streams, sub_streams;
-  int i;
-  struct ffaacsucks_result *ffaac_res;
-  struct dakara_check_results *res;
-
-  res = malloc(sizeof(struct dakara_check_results));
+struct dakara_check_results *dakara_check_results_new(void) {
+  struct dakara_check_results *res =
+      malloc(sizeof(struct dakara_check_results));
   res->passed = true;
   res->n_streams = 0;
   res->streams = NULL;
+  return res;
+}
 
-  ret = avformat_open_input(&s, filepath, NULL, NULL);
-  if (ret < 0) {
-    fprintf(stderr, "failed to load file %s: %s\n", filepath, strerror(errno));
-    res->passed = false;
-    return res;
+struct dakara_check_results *
+dakara_check_avio(size_t buffer_size, void *readable,
+                  int (*read_packet)(void *, uint8_t *, int),
+                  int64_t (*seek)(void *, int64_t, int)) {
+  AVFormatContext *fmt_ctx = NULL;
+  AVIOContext *avio_ctx = NULL;
+  struct dakara_check_results *res = dakara_check_results_new();
+
+  uint8_t *avio_ctx_buffer = av_malloc(buffer_size);
+  if (avio_ctx_buffer == NULL) {
+    perror("could not allocate AVIO buffer");
+    goto end;
   }
 
-  video_streams = 0;
-  audio_streams = 0;
-  sub_streams = 0;
+  avio_ctx = avio_alloc_context(avio_ctx_buffer, buffer_size, 0, readable,
+                                read_packet, NULL, seek);
+  if (avio_ctx == NULL) {
+    perror("could not allocate AVIO context");
+    goto end;
+  }
+
+  fmt_ctx = avformat_alloc_context();
+  if (fmt_ctx == NULL) {
+    perror("could not allocate avformat context");
+    goto end;
+  }
+
+  fmt_ctx->pb = avio_ctx;
+
+  int ret = avformat_open_input(&fmt_ctx, NULL, NULL, NULL);
+  if (ret < 0) {
+    fprintf(stderr, "could not open avio input\n");
+    goto end;
+  }
+
+end:
+  if (fmt_ctx != NULL)
+    avformat_close_input(&fmt_ctx);
+
+  if (avio_ctx != NULL) {
+    av_freep(&avio_ctx->buffer);
+    avio_context_free(&avio_ctx);
+  }
+
+  return res;
+}
+
+static void dakara_check_avf(AVFormatContext *s,
+                             struct dakara_check_results *res,
+                             unsigned int external_sub_file) {
+  unsigned int video_streams = 0;
+  unsigned int audio_streams = 0;
+  unsigned int sub_streams = 0;
+
   res->n_streams = s->nb_streams;
   res->streams = malloc(sizeof(char *) * res->n_streams);
 
@@ -76,13 +119,28 @@ struct dakara_check_results *dakara_check(char *filepath,
     }
   }
 
-  ffaac_res = ffaacsucks_check_avfcontext(s, filepath);
+  struct ffaacsucks_result *ffaac_res = ffaacsucks_check_avfcontext(s);
   if (ffaac_res->n_streams > 0) {
     res->passed = false;
-    for (i = 0; i < ffaac_res->n_streams; i++)
+    for (int i = 0; i < ffaac_res->n_streams; i++)
       res->streams[ffaac_res->streams[i]] = LAVC_AAC_STREAM;
   }
   ffaacsucks_result_free(ffaac_res);
+}
+
+struct dakara_check_results *dakara_check(char *filepath,
+                                          unsigned int external_sub_file) {
+  AVFormatContext *s = NULL;
+  struct dakara_check_results *res = dakara_check_results_new();
+
+  int ret = avformat_open_input(&s, filepath, NULL, NULL);
+  if (ret < 0) {
+    fprintf(stderr, "failed to load file %s: %s\n", filepath, strerror(errno));
+    res->passed = false;
+    return res;
+  }
+
+  dakara_check_avf(s, res, external_sub_file);
 
   avformat_close_input(&s);
   avformat_free_context(s);
