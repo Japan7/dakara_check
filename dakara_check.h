@@ -44,6 +44,10 @@ const char *dakara_check_version(void);
 
 struct dakara_check_results *dakara_check(char *filepath, unsigned int external_sub_file);
 
+struct dakara_check_results *dakara_check_avio(size_t buffer_size, void *readable,
+                                               int (*read_packet)(void *, uint8_t *, int),
+                                               int64_t (*seek)(void *, int64_t, int));
+
 void dakara_check_print_results(struct dakara_check_results *res, char *filepath);
 
 int dakara_check_sub_file(char *filepath);
