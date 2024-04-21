@@ -2,7 +2,7 @@ project(
     'dakara_check',
     'c',
     license: 'LGPL-3.0-only',
-    version: '4.0.1',
+    version: '4.0.2',
     default_options: ['warning_level=3', 'c_std=gnu17'],
 )
 
@@ -29,13 +29,15 @@ deps += dependency(
     fallback: ['ffmpegaacsucks', 'ffmpegaacsucks_dep'],
 )
 
-install_headers('dakara_check.h')
+install_headers('include/dakara_check.h')
+inc = include_directories('include')
 
 libdakara_check = library(
     'dakara_check',
     'libdakara_check.c',
     version_h,
     dependencies: deps,
+    include_directories: inc,
     install: true,
     version: meson.project_version(),
     soversion: '3',
@@ -45,6 +47,7 @@ dakara_check_exe = executable(
     'dakara_check',
     'dakara_check.c',
     dependencies: deps,
+    include_directories: inc,
     link_with: libdakara_check,
     install: true,
 )
@@ -52,4 +55,7 @@ dakara_check_exe = executable(
 pkg = import('pkgconfig')
 pkg.generate(libdakara_check)
 
-dakara_check_dep = declare_dependency(link_with: libdakara_check)
+dakara_check_dep = declare_dependency(
+    link_with: libdakara_check,
+    include_directories: inc,
+)
