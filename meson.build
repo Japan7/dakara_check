@@ -2,7 +2,7 @@ project(
     'dakara_check',
     'c',
     license: 'LGPL-3.0-only',
-    version: '4.0.3',
+    version: '4.0.4',
     default_options: ['warning_level=3', 'c_std=gnu17'],
 )
 
