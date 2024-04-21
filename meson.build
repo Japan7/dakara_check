@@ -2,7 +2,7 @@ project(
     'dakara_check',
     'c',
     license: 'LGPL-3.0-only',
-    version: '4.0.2',
+    version: '4.0.3',
     default_options: ['warning_level=3', 'c_std=gnu17'],
 )
 
@@ -57,5 +57,6 @@ pkg.generate(libdakara_check)
 
 dakara_check_dep = declare_dependency(
     link_with: libdakara_check,
+    dependencies: deps,
     include_directories: inc,
 )
