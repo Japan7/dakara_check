@@ -1,8 +1,8 @@
 [wrap-file]
-directory = ffmpegaacsucks-2.0.0
-source_url = https://git.odrling.xyz/ffmpegaacsucks/snapshot/ffmpegaacsucks-2.0.0.tar.gz
-source_filename = ffmpegaacsucks-2.0.0.tar.gz
-source_hash = 69f4160ca598756e8769b6ca5b779abffd6b14cf45f04222c2b1931a7b36cd53
+directory = ffmpegaacsucks-2.0.1
+source_url = https://github.com/odrling/ffmpegaacsucks/archive/2.0.1/ffmpegaacsucks.tar.gz
+source_filename = ffmpegaacsucks.tar.gz
+source_hash = 8b2578c9e7a15d85b3a46c8db30f400320a1a04d3d121f109722cdd5499ab5d5
 
 [provide]
 ffmpegaacsucks = ffmpegaacsucks_dep
