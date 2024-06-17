@@ -22,8 +22,7 @@ int main(int argc, char *argv[]) {
   }
 
   int external_sub_file = dakara_check_external_sub_file_for(argv[1]);
-  // TODO: external audio file(?)
-  res = dakara_check(argv[1], external_sub_file, 0);
+  res = dakara_check(argv[1], external_sub_file);
   if (res->passed) {
     dakara_check_results_free(res);
     return EXIT_SUCCESS;
