@@ -2,7 +2,7 @@ project(
     'dakara_check',
     'c',
     license: 'LGPL-3.0-only',
-    version: '4.0.4',
+    version: '5.0.0',
     default_options: ['warning_level=3', 'c_std=gnu17'],
 )
 
@@ -40,7 +40,7 @@ libdakara_check = library(
     include_directories: inc,
     install: true,
     version: meson.project_version(),
-    soversion: '3',
+    soversion: '4',
 )
 
 dakara_check_exe = executable(
