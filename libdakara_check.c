@@ -1,10 +1,13 @@
 
+#include <errno.h>
 #include <ffmpegaacsucks.h>
+#include <libavcodec/codec_par.h>
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 #include <libavutil/avutil.h>
 #include <libavutil/mem.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

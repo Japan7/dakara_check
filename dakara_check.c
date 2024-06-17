@@ -2,7 +2,9 @@
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "dakara_check.h"
 

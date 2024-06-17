@@ -6,6 +6,7 @@
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 enum dakara_stream_result {
   OK,
