@@ -14,7 +14,7 @@ enum dakara_stream_result {
   LAVC_AAC_STREAM,
   TOO_MANY_AUDIO_STREAMS,
   TOO_MANY_VIDEO_STREAMS,
-  TOO_MANY_SUBTITLE_STREAMS,
+  INTERNAL_SUB_STREAM,
   ATTACHMENT_STREAM,
 };
 
@@ -43,7 +43,7 @@ void dakara_check_results_free(struct dakara_check_results *res);
 
 const char *dakara_check_version(void);
 
-struct dakara_check_results *dakara_check(char *filepath, unsigned int external_sub_file);
+struct dakara_check_results *dakara_check(char *filepath);
 
 struct dakara_check_results *dakara_check_avio(size_t buffer_size, void *readable,
                                                int (*read_packet)(void *, uint8_t *, int),
