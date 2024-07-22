@@ -67,11 +67,14 @@ static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *re
   }
 
   // if duration was not found in the streams
-  if (res->duration <= 0)
-    res->duration = s->duration / AV_TIME_BASE;
-
-  if (res->duration <= 0)
-    res->passed = false;
+  if (res->duration <= 0) {
+    if (s->duration > 0) {
+      res->duration = s->duration / AV_TIME_BASE;
+      dakara_check_results_add_error(res, GLOBAL_DURATION);
+    } else {
+      dakara_check_results_add_error(res, NO_DURATION);
+    }
+  }
 
   struct ffaacsucks_result *ffaac_res = ffaacsucks_check_avfcontext(s);
   if (ffaac_res->n_streams > 0) {
@@ -209,7 +212,9 @@ struct dakara_check_report dakara_results_error_reports[] = {
     [TOO_MANY_VIDEO_STREAMS] = {"Too many video streams", ERROR},
     [INTERNAL_SUB_STREAM] = {"Internal subtitle track should be removed", ERROR},
     [ATTACHMENT_STREAM] = {"Attachment found (probably a font)", ERROR},
-};
+    [GLOBAL_DURATION] =
+        {"Video track has no duration, the detected duration may or may not be wrong", WARNING},
+    [NO_DURATION] = {"No duration found for the file", ERROR}};
 
 struct dakara_check_report dakara_check_get_report(enum dakara_stream_result res) {
   return dakara_results_error_reports[res];

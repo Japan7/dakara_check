@@ -16,6 +16,8 @@ enum dakara_stream_result {
   TOO_MANY_VIDEO_STREAMS,
   INTERNAL_SUB_STREAM,
   ATTACHMENT_STREAM,
+  GLOBAL_DURATION,
+  NO_DURATION,
 };
 
 enum dakara_check_error_level {
