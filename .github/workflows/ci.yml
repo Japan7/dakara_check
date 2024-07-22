@@ -61,7 +61,9 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: ${{ github.sha }}-${{ matrix.config.arch }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: ARCH=${{ matrix.config.arch }}
+          build-args: |
+            ARCH=${{ matrix.config.arch }}
+            BUILDER_IMAGE=ghcr.io/odrling/chimera:cross-x86_64
           containerfiles: Containerfile
 
       - name: Push image
