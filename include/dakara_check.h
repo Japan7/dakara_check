@@ -32,6 +32,7 @@ struct dakara_check_report {
 struct dakara_check_report dakara_check_get_report(enum dakara_stream_result res);
 
 struct dakara_check_results {
+  int64_t duration;
   enum dakara_stream_result *streams;
   unsigned int n_streams;
   bool passed;

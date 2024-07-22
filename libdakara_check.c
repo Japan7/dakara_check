@@ -22,6 +22,7 @@ struct dakara_check_results *dakara_check_results_new(void) {
   struct dakara_check_results *res = malloc(sizeof(struct dakara_check_results));
   res->passed = true;
   res->n_streams = 0;
+  res->duration = 0;
   res->streams = NULL;
   return res;
 }
@@ -43,6 +44,7 @@ static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *re
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
+      res->duration = st->duration * st->time_base.num / st->time_base.den;
       if (video_streams++ > 0) {
         res->streams[ui] = TOO_MANY_VIDEO_STREAMS;
         res->passed = false;
@@ -68,6 +70,13 @@ static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *re
       res->passed = false;
     }
   }
+
+  // if duration was not found in the streams
+  if (res->duration <= 0)
+    res->duration = s->duration / AV_TIME_BASE;
+
+  if (res->duration <= 0)
+    res->passed = false;
 
   struct ffaacsucks_result *ffaac_res = ffaacsucks_check_avfcontext(s);
   if (ffaac_res->n_streams > 0) {
