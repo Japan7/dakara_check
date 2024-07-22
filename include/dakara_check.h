@@ -29,12 +29,14 @@ struct dakara_check_report {
   enum dakara_check_error_level error_level;
 };
 
+extern struct dakara_check_report dakara_results_error_reports[];
+
 struct dakara_check_report dakara_check_get_report(enum dakara_stream_result res);
 
 struct dakara_check_results {
   int64_t duration;
-  enum dakara_stream_result *streams;
-  unsigned int n_streams;
+  enum dakara_stream_result *errors;
+  unsigned int n_errors;
   bool passed;
 };
 

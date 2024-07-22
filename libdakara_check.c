@@ -21,24 +21,24 @@ const char *dakara_check_version(void) { return DAKARA_CHECK_VERSION; }
 struct dakara_check_results *dakara_check_results_new(void) {
   struct dakara_check_results *res = malloc(sizeof(struct dakara_check_results));
   res->passed = true;
-  res->n_streams = 0;
+  res->n_errors = 0;
   res->duration = 0;
-  res->streams = NULL;
+  res->errors = NULL;
   return res;
+}
+
+void dakara_check_results_add_error(struct dakara_check_results *res,
+                                    enum dakara_stream_result err) {
+  res->errors = reallocarray(res->errors, res->n_errors++, sizeof(res->errors));
+  res->errors[res->n_errors - 1] = err;
+  res->passed = true;
 }
 
 static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *res) {
   unsigned int video_streams = 0;
   unsigned int audio_streams = 0;
 
-  res->n_streams = s->nb_streams;
-  res->streams = malloc(sizeof(char *) * res->n_streams);
-
-  unsigned int ui;
-  for (ui = 0; ui < res->n_streams; ui++)
-    res->streams[ui] = OK;
-
-  for (ui = 0; ui < s->nb_streams; ui++) {
+  for (unsigned int ui = 0; ui < s->nb_streams; ui++) {
     AVStream *st = s->streams[ui];
     AVCodecParameters *par = st->codecpar;
 
@@ -46,28 +46,23 @@ static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *re
     case AVMEDIA_TYPE_VIDEO:
       res->duration = st->duration * st->time_base.num / st->time_base.den;
       if (video_streams++ > 0) {
-        res->streams[ui] = TOO_MANY_VIDEO_STREAMS;
-        res->passed = false;
+        dakara_check_results_add_error(res, TOO_MANY_VIDEO_STREAMS);
       }
       break;
     case AVMEDIA_TYPE_AUDIO:
       // we allow up to 1 audio streams in each file
       if (++audio_streams > 1) {
-        res->streams[ui] = TOO_MANY_AUDIO_STREAMS;
-        res->passed = false;
+        dakara_check_results_add_error(res, TOO_MANY_AUDIO_STREAMS);
       }
       break;
     case AVMEDIA_TYPE_SUBTITLE:
-      res->streams[ui] = INTERNAL_SUB_STREAM;
-      res->passed = false;
+      dakara_check_results_add_error(res, INTERNAL_SUB_STREAM);
       break;
     case AVMEDIA_TYPE_ATTACHMENT:
-      res->streams[ui] = ATTACHMENT_STREAM;
-      res->passed = false;
+      dakara_check_results_add_error(res, ATTACHMENT_STREAM);
       break;
     default:
-      res->streams[ui] = UNKNOWN_STREAM;
-      res->passed = false;
+      dakara_check_results_add_error(res, UNKNOWN_STREAM);
     }
   }
 
@@ -82,7 +77,7 @@ static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *re
   if (ffaac_res->n_streams > 0) {
     res->passed = false;
     for (int i = 0; i < ffaac_res->n_streams; i++)
-      res->streams[ffaac_res->streams[i]] = LAVC_AAC_STREAM;
+      dakara_check_results_add_error(res, LAVC_AAC_STREAM);
   }
   ffaacsucks_result_free(ffaac_res);
 }
@@ -154,10 +149,9 @@ end:
 }
 
 void dakara_check_print_results(struct dakara_check_results *res, char *filepath) {
-  unsigned int ui;
-  for (ui = 0; ui < res->n_streams; ui++) {
-    if (res->streams[ui] != OK) {
-      struct dakara_check_report report = dakara_check_get_report(res->streams[ui]);
+  for (unsigned int ui = 0; ui < res->n_errors; ui++) {
+    if (res->errors[ui] != OK) {
+      struct dakara_check_report report = dakara_check_get_report(res->errors[ui]);
       printf("%s: Stream %d (error level %d): %s\n", filepath, ui, report.error_level,
              report.message);
     }
@@ -207,7 +201,7 @@ int dakara_check_external_sub_file_for(char *filepath) {
   return dakara_check_sub_file(sub_filepath);
 }
 
-static struct dakara_check_report dakara_results_error_reports[] = {
+struct dakara_check_report dakara_results_error_reports[] = {
     [OK] = {"OK", NONE},
     [UNKNOWN_STREAM] = {"Unknown stream type", WARNING},
     [LAVC_AAC_STREAM] = {"Lavc/FFMPEG AAC stream", ERROR},
@@ -222,7 +216,7 @@ struct dakara_check_report dakara_check_get_report(enum dakara_stream_result res
 }
 
 void dakara_check_results_free(struct dakara_check_results *res) {
-  if (res->streams != NULL)
-    free(res->streams);
+  if (res->errors != NULL)
+    free(res->errors);
   free(res);
 }
