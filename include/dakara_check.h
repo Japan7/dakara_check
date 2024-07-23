@@ -53,8 +53,6 @@ dakara_check_results *dakara_check_avio(size_t buffer_size, void *readable,
 
 void dakara_check_print_results(dakara_check_results *res, char *filepath);
 
-int dakara_check_sub_file(char *filepath);
-
 int dakara_check_external_sub_file_for(char *filepath);
 
 #endif
