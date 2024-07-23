@@ -6,6 +6,7 @@
 #include <libavformat/avio.h>
 #include <libavutil/avutil.h>
 #include <libavutil/mem.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -67,10 +68,11 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
     }
   }
 
-  if (duration >= 1 << (8 * sizeof(res->duration))) {
+  if (duration >= INT_MAX) {
     res->report.errors.no_duration = true;
+  } else {
+    res->duration = duration;
   }
-  res->duration = duration;
 
   struct ffaacsucks_result *ffaac_res = ffaacsucks_check_avfcontext(s);
   if (ffaac_res->n_streams > 0) {
