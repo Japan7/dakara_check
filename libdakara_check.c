@@ -18,35 +18,16 @@
 
 const char *dakara_check_version(void) { return DAKARA_CHECK_VERSION; }
 
-struct dakara_check_results *dakara_check_results_new(void) {
-  struct dakara_check_results *res = malloc(sizeof(struct dakara_check_results));
-  if (res == NULL) {
-    perror("failed to allocate dakara_check_results struct");
-    return NULL;
-  }
-  res->passed = true;
-  res->n_errors = 0;
+void dakara_check_results_init(dakara_check_results *res) {
   res->duration = 0;
-  res->errors = NULL;
-  return res;
+  res->report.passed = 0;
 }
 
-bool dakara_check_results_add_error(struct dakara_check_results *res,
-                                    enum dakara_stream_result err) {
-  res->passed = false;
-  res->errors = reallocarray(res->errors, res->n_errors++, sizeof(res->errors));
-  if (res->errors == NULL) {
-    perror("failed to allocate res->errors");
-    return false;
-  } else {
-    res->errors[res->n_errors - 1] = err;
-    return true;
-  }
-}
-
-static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *res) {
+static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
   unsigned int video_streams = 0;
   unsigned int audio_streams = 0;
+
+  int64_t duration;
 
   for (unsigned int ui = 0; ui < s->nb_streams; ui++) {
     AVStream *st = s->streams[ui];
@@ -54,57 +35,58 @@ static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *re
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-      res->duration = st->duration * st->time_base.num / st->time_base.den;
+      duration = st->duration * st->time_base.num / st->time_base.den;
       if (video_streams++ > 0) {
-        dakara_check_results_add_error(res, TOO_MANY_VIDEO_STREAMS);
+        res->report.errors.too_many_video_streams = true;
       }
       break;
     case AVMEDIA_TYPE_AUDIO:
       // we allow up to 1 audio streams in each file
       if (++audio_streams > 1) {
-        dakara_check_results_add_error(res, TOO_MANY_AUDIO_STREAMS);
+        res->report.errors.too_many_audio_streams = true;
       }
       break;
     case AVMEDIA_TYPE_SUBTITLE:
-      dakara_check_results_add_error(res, INTERNAL_SUB_STREAM);
+      res->report.errors.internal_sub_stream = 1;
       break;
     case AVMEDIA_TYPE_ATTACHMENT:
-      dakara_check_results_add_error(res, ATTACHMENT_STREAM);
+      res->report.errors.attachment_stream = 1;
       break;
     default:
-      dakara_check_results_add_error(res, UNKNOWN_STREAM);
+      res->report.errors.unknown_stream = 1;
     }
   }
 
   // if duration was not found in the streams
-  if (res->duration <= 0) {
+  if (duration <= 0) {
     if (s->duration > 0) {
-      res->duration = s->duration / AV_TIME_BASE;
-      dakara_check_results_add_error(res, GLOBAL_DURATION);
+      duration = s->duration / AV_TIME_BASE;
+      res->report.errors.global_duration = true;
     } else {
-      dakara_check_results_add_error(res, NO_DURATION);
+      res->report.errors.no_duration = true;
     }
   }
 
+  if (duration >= 1 << (8 * sizeof(res->duration))) {
+    res->report.errors.no_duration = true;
+  }
+  res->duration = duration;
+
   struct ffaacsucks_result *ffaac_res = ffaacsucks_check_avfcontext(s);
   if (ffaac_res->n_streams > 0) {
-    res->passed = false;
-    for (int i = 0; i < ffaac_res->n_streams; i++)
-      dakara_check_results_add_error(res, LAVC_AAC_STREAM);
+    res->report.errors.lavc_aac_stream = 1;
   }
   ffaacsucks_result_free(ffaac_res);
 }
 
-struct dakara_check_results *dakara_check(char *filepath) {
+dakara_check_results *dakara_check(char *filepath, dakara_check_results *res) {
   AVFormatContext *s = NULL;
-  struct dakara_check_results *res = dakara_check_results_new();
-  if (res == NULL)
-    return NULL;
+  dakara_check_results_init(res);
 
   int ret = avformat_open_input(&s, filepath, NULL, NULL);
   if (ret < 0) {
     fprintf(stderr, "failed to load file %s: %s\n", filepath, strerror(errno));
-    res->passed = false;
+    res->report.errors.io_error = true;
     return res;
   }
 
@@ -116,29 +98,31 @@ struct dakara_check_results *dakara_check(char *filepath) {
   return res;
 }
 
-struct dakara_check_results *dakara_check_avio(size_t buffer_size, void *readable,
-                                               int (*read_packet)(void *, uint8_t *, int),
-                                               int64_t (*seek)(void *, int64_t, int)) {
+dakara_check_results *dakara_check_avio(size_t buffer_size, void *readable,
+                                        int (*read_packet)(void *, uint8_t *, int),
+                                        int64_t (*seek)(void *, int64_t, int),
+                                        dakara_check_results *res) {
   AVFormatContext *fmt_ctx = NULL;
   AVIOContext *avio_ctx = NULL;
-  struct dakara_check_results *res = dakara_check_results_new();
-  if (res == NULL)
-    return NULL;
+  dakara_check_results_init(res);
 
   uint8_t *avio_ctx_buffer = av_malloc(buffer_size);
   if (avio_ctx_buffer == NULL) {
+    res->report.errors.io_error = true;
     perror("could not allocate AVIO buffer");
     goto end;
   }
 
   avio_ctx = avio_alloc_context(avio_ctx_buffer, buffer_size, 0, readable, read_packet, NULL, seek);
   if (avio_ctx == NULL) {
+    res->report.errors.io_error = true;
     perror("could not allocate AVIO context");
     goto end;
   }
 
   fmt_ctx = avformat_alloc_context();
   if (fmt_ctx == NULL) {
+    res->report.errors.io_error = true;
     perror("could not allocate avformat context");
     goto end;
   }
@@ -147,6 +131,7 @@ struct dakara_check_results *dakara_check_avio(size_t buffer_size, void *readabl
 
   int ret = avformat_open_input(&fmt_ctx, NULL, NULL, NULL);
   if (ret < 0) {
+    res->report.errors.io_error = true;
     fprintf(stderr, "could not open avio input\n");
     goto end;
   }
@@ -165,13 +150,52 @@ end:
   return res;
 }
 
-void dakara_check_print_results(struct dakara_check_results *res, char *filepath) {
-  for (unsigned int ui = 0; ui < res->n_errors; ui++) {
-    if (res->errors[ui] != OK) {
-      struct dakara_check_report report = dakara_check_get_report(res->errors[ui]);
-      printf("%s: Stream %d (error level %d): %s\n", filepath, ui, report.error_level,
-             report.message);
-    }
+char const *dakara_check_str_report(union dakara_check_results_report *report) {
+  if (report->errors.lavc_aac_stream) {
+    report->errors.lavc_aac_stream = false;
+    return "file contains a LAVC AAC audio stream";
+  }
+  if (report->errors.attachment_stream) {
+    report->errors.attachment_stream = false;
+    return "found an attachment in the file (probably a font)";
+  }
+  if (report->errors.internal_sub_stream) {
+    report->errors.internal_sub_stream = false;
+    return "internal subtitle track should be removed";
+  }
+  if (report->errors.too_many_video_streams) {
+    report->errors.too_many_video_streams = false;
+    return "too many video tracks";
+  }
+  if (report->errors.too_many_audio_streams) {
+    report->errors.too_many_audio_streams = false;
+    return "too many audio tracks";
+  }
+  if (report->errors.unknown_stream) {
+    report->errors.unknown_stream = false;
+    return "found an unknown track";
+  }
+  if (report->errors.no_duration) {
+    report->errors.no_duration = false;
+    return "failed to find file duration";
+  }
+  if (report->errors.global_duration) {
+    report->errors.global_duration = false;
+    return "using global file duration, may or may not be correct";
+  }
+  if (report->errors.io_error) {
+    report->errors.io_error = false;
+    return "failed to open file";
+  }
+
+  return NULL;
+}
+
+void dakara_check_print_results(dakara_check_results *res, char *filepath) {
+  union dakara_check_results_report report = res->report;
+  char const *msg;
+  while ((msg = dakara_check_str_report(&report)) != NULL) {
+    fprintf(stderr, "%s: %s\n", filepath, msg);
   }
 }
 
@@ -216,26 +240,4 @@ int dakara_check_external_sub_file_for(char *filepath) {
 
   free(filebasepath);
   return dakara_check_sub_file(sub_filepath);
-}
-
-struct dakara_check_report dakara_results_error_reports[] = {
-    [OK] = {"OK", NONE},
-    [UNKNOWN_STREAM] = {"Unknown stream type", WARNING},
-    [LAVC_AAC_STREAM] = {"Lavc/FFMPEG AAC stream", ERROR},
-    [TOO_MANY_AUDIO_STREAMS] = {"Too many audio streams", ERROR},
-    [TOO_MANY_VIDEO_STREAMS] = {"Too many video streams", ERROR},
-    [INTERNAL_SUB_STREAM] = {"Internal subtitle track should be removed", ERROR},
-    [ATTACHMENT_STREAM] = {"Attachment found (probably a font)", ERROR},
-    [GLOBAL_DURATION] =
-        {"Video track has no duration, the detected duration may or may not be wrong", WARNING},
-    [NO_DURATION] = {"No duration found for the file", ERROR}};
-
-struct dakara_check_report dakara_check_get_report(enum dakara_stream_result res) {
-  return dakara_results_error_reports[res];
-}
-
-void dakara_check_results_free(struct dakara_check_results *res) {
-  if (res->errors != NULL)
-    free(res->errors);
-  free(res);
 }

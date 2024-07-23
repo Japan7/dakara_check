@@ -8,53 +8,50 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-enum dakara_stream_result {
-  OK,
-  UNKNOWN_STREAM,
-  LAVC_AAC_STREAM,
-  TOO_MANY_AUDIO_STREAMS,
-  TOO_MANY_VIDEO_STREAMS,
-  INTERNAL_SUB_STREAM,
-  ATTACHMENT_STREAM,
-  GLOBAL_DURATION,
-  NO_DURATION,
+struct dakara_check_results_errors_switches {
+  // INFO: unknown stream type
+  bool unknown_stream : 1;
+  // WARNING: audio track encoded with LAVC AAC codec
+  bool lavc_aac_stream : 1;
+  // WARNING: too many video tracks
+  bool too_many_video_streams : 1;
+  // WARNING: too many audio tracks
+  bool too_many_audio_streams : 1;
+  // WARNING: internal sub track
+  bool internal_sub_stream : 1;
+  // WARNING: attachment found (probably a font)
+  bool attachment_stream : 1;
+  // INFO: using global duration of the file. detected duration may or may not be wrong.
+  bool global_duration : 1;
+  // WARNING: no detected duration
+  bool no_duration : 1;
+  // ERROR: failed to open file
+  bool io_error : 1;
 };
 
-enum dakara_check_error_level {
-  NONE,
-  WARNING,
-  ERROR,
+union dakara_check_results_report {
+  struct dakara_check_results_errors_switches errors;
+  // checks passed if 0, failed otherwise
+  int16_t passed;
 };
 
-struct dakara_check_report {
-  char const *const message;
-  enum dakara_check_error_level error_level;
-};
+typedef struct {
+  int16_t duration;
+  union dakara_check_results_report report;
+} dakara_check_results;
 
-extern struct dakara_check_report dakara_results_error_reports[];
-
-struct dakara_check_report dakara_check_get_report(enum dakara_stream_result res);
-
-struct dakara_check_results {
-  int64_t duration;
-  enum dakara_stream_result *errors;
-  unsigned int n_errors;
-  bool passed;
-};
-
-struct dakara_check_results *dakara_check_results_new(void);
-
-void dakara_check_results_free(struct dakara_check_results *res);
+void dakara_check_results_init(dakara_check_results *res);
 
 const char *dakara_check_version(void);
 
-struct dakara_check_results *dakara_check(char *filepath);
+dakara_check_results *dakara_check(char *filepath, dakara_check_results *res);
 
-struct dakara_check_results *dakara_check_avio(size_t buffer_size, void *readable,
-                                               int (*read_packet)(void *, uint8_t *, int),
-                                               int64_t (*seek)(void *, int64_t, int));
+dakara_check_results *dakara_check_avio(size_t buffer_size, void *readable,
+                                        int (*read_packet)(void *, uint8_t *, int),
+                                        int64_t (*seek)(void *, int64_t, int),
+                                        dakara_check_results *res);
 
-void dakara_check_print_results(struct dakara_check_results *res, char *filepath);
+void dakara_check_print_results(dakara_check_results *res, char *filepath);
 
 int dakara_check_sub_file(char *filepath);
 

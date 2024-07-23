@@ -9,8 +9,6 @@
 #include "dakara_check.h"
 
 int main(int argc, char *argv[]) {
-  struct dakara_check_results *res;
-
   if (argc < 2) {
     fprintf(stderr, "usage: dakara_check <FILE>\n");
     return EXIT_FAILURE;
@@ -25,17 +23,15 @@ int main(int argc, char *argv[]) {
   if (external_sub_file == 0) {
     printf("%s: no external sub file found\n", argv[1]);
   }
-  res = dakara_check(argv[1]);
-  if (res == NULL)
-    return EXIT_FAILURE;
 
-  printf("%s duration: %ld\n", argv[1], res->duration);
-  if (res->passed) {
-    dakara_check_results_free(res);
+  dakara_check_results res;
+  dakara_check(argv[1], &res);
+
+  printf("%s duration: %d\n", argv[1], res.duration);
+  if (res.report.passed == 0) {
     return EXIT_SUCCESS;
   }
 
-  dakara_check_print_results(res, argv[1]);
-  dakara_check_results_free(res);
+  dakara_check_print_results(&res, argv[1]);
   return EXIT_FAILURE;
 }
