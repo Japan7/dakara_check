@@ -20,6 +20,10 @@ const char *dakara_check_version(void) { return DAKARA_CHECK_VERSION; }
 
 struct dakara_check_results *dakara_check_results_new(void) {
   struct dakara_check_results *res = malloc(sizeof(struct dakara_check_results));
+  if (res == NULL) {
+    perror("failed to allocate dakara_check_results struct");
+    return NULL;
+  }
   res->passed = true;
   res->n_errors = 0;
   res->duration = 0;
@@ -27,11 +31,17 @@ struct dakara_check_results *dakara_check_results_new(void) {
   return res;
 }
 
-void dakara_check_results_add_error(struct dakara_check_results *res,
+bool dakara_check_results_add_error(struct dakara_check_results *res,
                                     enum dakara_stream_result err) {
+  res->passed = false;
   res->errors = reallocarray(res->errors, res->n_errors++, sizeof(res->errors));
-  res->errors[res->n_errors - 1] = err;
-  res->passed = true;
+  if (res->errors == NULL) {
+    perror("failed to allocate res->errors");
+    return false;
+  } else {
+    res->errors[res->n_errors - 1] = err;
+    return true;
+  }
 }
 
 static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *res) {
@@ -88,6 +98,8 @@ static void dakara_check_avf(AVFormatContext *s, struct dakara_check_results *re
 struct dakara_check_results *dakara_check(char *filepath) {
   AVFormatContext *s = NULL;
   struct dakara_check_results *res = dakara_check_results_new();
+  if (res == NULL)
+    return NULL;
 
   int ret = avformat_open_input(&s, filepath, NULL, NULL);
   if (ret < 0) {
@@ -110,6 +122,8 @@ struct dakara_check_results *dakara_check_avio(size_t buffer_size, void *readabl
   AVFormatContext *fmt_ctx = NULL;
   AVIOContext *avio_ctx = NULL;
   struct dakara_check_results *res = dakara_check_results_new();
+  if (res == NULL)
+    return NULL;
 
   uint8_t *avio_ctx_buffer = av_malloc(buffer_size);
   if (avio_ctx_buffer == NULL) {

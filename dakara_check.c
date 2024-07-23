@@ -26,6 +26,9 @@ int main(int argc, char *argv[]) {
     printf("%s: no external sub file found\n", argv[1]);
   }
   res = dakara_check(argv[1]);
+  if (res == NULL)
+    return EXIT_FAILURE;
+
   printf("%s duration: %ld\n", argv[1], res->duration);
   if (res->passed) {
     dakara_check_results_free(res);
