@@ -32,11 +32,11 @@ struct dakara_check_results_errors_switches {
 union dakara_check_results_report {
   struct dakara_check_results_errors_switches errors;
   // checks passed if 0, failed otherwise
-  int16_t passed;
+  uint32_t passed;
 };
 
 typedef struct {
-  int16_t duration;
+  uint32_t duration;
   union dakara_check_results_report report;
 } dakara_check_results;
 
