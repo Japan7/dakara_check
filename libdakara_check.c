@@ -41,7 +41,8 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-      duration = st->duration * st->time_base.num / st->time_base.den;
+      if (duration <= 0)
+        duration = st->duration * st->time_base.num / st->time_base.den;
       if (video_streams++ > 0) {
         res->report.errors.too_many_video_streams = true;
       }
