@@ -28,7 +28,7 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
   unsigned int video_streams = 0;
   unsigned int audio_streams = 0;
 
-  int64_t duration;
+  int64_t duration = 0;
 
   for (unsigned int ui = 0; ui < s->nb_streams; ui++) {
     AVStream *st = s->streams[ui];
