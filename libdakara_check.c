@@ -58,6 +58,12 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
     }
   }
 
+  if (video_streams == 0)
+    res->report.errors.no_video_stream = true;
+
+  if (audio_streams == 0)
+    res->report.errors.no_audio_stream = true;
+
   // if duration was not found in the streams
   if (duration <= 0) {
     if (s->duration > 0) {

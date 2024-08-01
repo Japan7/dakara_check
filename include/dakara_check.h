@@ -25,6 +25,10 @@ struct dakara_check_results_errors_switches {
   bool global_duration : 1;
   // WARNING: no detected duration
   bool no_duration : 1;
+  // WARNING: missing video stream
+  bool no_video_stream : 1;
+  // ERROR: missing audio stream
+  bool no_audio_stream : 1;
   // ERROR: failed to open file
   bool io_error : 1;
 };
