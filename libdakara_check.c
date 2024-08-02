@@ -29,13 +29,12 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
   unsigned int audio_streams = 0;
 
   int64_t duration = 0;
-  if (s->nb_streams == 0) {
-    // mpeg probably
-    if (avformat_find_stream_info(s, NULL) < 0) {
-      perror("failed to find streams");
-      res->report.errors.io_error = true;
-      return;
-    }
+
+  // needed for mpeg-ts files
+  if (avformat_find_stream_info(s, NULL) < 0) {
+    perror("failed to find streams");
+    res->report.errors.io_error = true;
+    return;
   }
 
   for (unsigned int ui = 0; ui < s->nb_streams; ui++) {
