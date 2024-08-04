@@ -48,12 +48,11 @@ void dakara_check_results_init(dakara_check_results *res);
 
 const char *dakara_check_version(void);
 
-dakara_check_results *dakara_check(char *filepath, dakara_check_results *res);
+void dakara_check(char *filepath, dakara_check_results *res);
 
-dakara_check_results *dakara_check_avio(size_t buffer_size, void *readable,
-                                        int (*read_packet)(void *, uint8_t *, int),
-                                        int64_t (*seek)(void *, int64_t, int),
-                                        dakara_check_results *res);
+void dakara_check_avio(size_t buffer_size, void *readable,
+                       int (*read_packet)(void *, uint8_t *, int),
+                       int64_t (*seek)(void *, int64_t, int), dakara_check_results *res);
 
 void dakara_check_print_results(dakara_check_results *res, char *filepath);
 

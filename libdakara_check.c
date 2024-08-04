@@ -95,7 +95,7 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
   ffaacsucks_result_free(ffaac_res);
 }
 
-dakara_check_results *dakara_check(char *filepath, dakara_check_results *res) {
+void dakara_check(char *filepath, dakara_check_results *res) {
   AVFormatContext *s = NULL;
   dakara_check_results_init(res);
 
@@ -103,21 +103,18 @@ dakara_check_results *dakara_check(char *filepath, dakara_check_results *res) {
   if (ret < 0) {
     fprintf(stderr, "failed to load file %s: %s\n", filepath, strerror(errno));
     res->report.errors.io_error = true;
-    return res;
+    return;
   }
 
   dakara_check_avf(s, res);
 
   avformat_close_input(&s);
   avformat_free_context(s);
-
-  return res;
 }
 
-dakara_check_results *dakara_check_avio(size_t buffer_size, void *readable,
-                                        int (*read_packet)(void *, uint8_t *, int),
-                                        int64_t (*seek)(void *, int64_t, int),
-                                        dakara_check_results *res) {
+void dakara_check_avio(size_t buffer_size, void *readable,
+                       int (*read_packet)(void *, uint8_t *, int),
+                       int64_t (*seek)(void *, int64_t, int), dakara_check_results *res) {
   AVFormatContext *fmt_ctx = NULL;
   AVIOContext *avio_ctx = NULL;
   dakara_check_results_init(res);
@@ -162,8 +159,6 @@ end:
     av_freep(&avio_ctx->buffer);
     avio_context_free(&avio_ctx);
   }
-
-  return res;
 }
 
 char const *dakara_check_str_report(union dakara_check_results_report *report) {
