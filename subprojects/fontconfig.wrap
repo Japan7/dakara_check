@@ -1,0 +1,7 @@
+[wrap-git]
+directory = fontconfig
+url = https://gitlab.freedesktop.org/fontconfig/fontconfig.git
+revision = master
+
+[provide]
+fontconfig = fontconfig_dep
