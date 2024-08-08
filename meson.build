@@ -22,7 +22,11 @@ endif
 deps = []
 deps += dependency('libavformat', fallback: ['ffmpeg', 'libavformat_dep'])
 deps += dependency('libavutil', fallback: ['ffmpeg', 'libavutil_dep'])
-deps += dependency('libass', fallback: 'libass')
+deps += dependency(
+    'libass',
+    fallback: 'libass',
+    default_options: ['require-system-font-provider=false'],
+)
 
 deps += dependency(
     'ffmpegaacsucks',
