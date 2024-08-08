@@ -2,6 +2,8 @@
 #ifndef DAKARA_CHECK_H
 #define DAKARA_CHECK_H
 
+#include <ass/ass.h>
+#include <ass/ass_types.h>
 #include <ffmpegaacsucks.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
@@ -57,5 +59,29 @@ void dakara_check_avio(size_t buffer_size, void *readable,
 void dakara_check_print_results(dakara_check_results *res, char *filepath);
 
 int dakara_check_external_sub_file_for(char *filepath);
+
+struct dakara_check_sub_results_errors_switches {
+  bool io_error : 1;
+};
+
+union dakara_check_sub_results_report {
+  struct dakara_check_sub_results_errors_switches errors;
+  // checks passed if 0, failed otherwise
+  uint32_t passed;
+};
+
+typedef struct {
+  union dakara_check_sub_results_report report;
+  char *lyrics;
+} dakara_check_sub_results;
+
+/*
+ * Check a subtitle file for errors
+ */
+dakara_check_sub_results *dakara_check_subtitle_file(char *filepath);
+
+dakara_check_sub_results *dakara_check_subtitle_memory(char *memory, size_t bufsize);
+
+void dakara_check_sub_results_free(dakara_check_sub_results *res);
 
 #endif

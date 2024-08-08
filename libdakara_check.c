@@ -1,4 +1,6 @@
 
+#include <ass/ass.h>
+#include <ass/ass_types.h>
 #include <errno.h>
 #include <ffmpegaacsucks.h>
 #include <libavcodec/codec_par.h>
@@ -251,4 +253,125 @@ int dakara_check_external_sub_file_for(char *filepath) {
 
   free(filebasepath);
   return dakara_check_sub_file(sub_filepath);
+}
+
+/*
+ * check events of the current track
+ */
+void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *res) {
+  unsigned long lyrics_len = strlen(res->lyrics) + 1;
+  char *line = NULL;
+  for (int i = 0; i < track->n_events; i++) {
+    line = strdup(track->events[i].Text);
+    if (line == NULL) {
+      perror("failed to duplicate string");
+      res->report.errors.io_error = true;
+      return;
+    }
+
+    unsigned long write_head = 0;
+    bool tags = false;
+
+    for (unsigned long read_head = 0; line[read_head] != '\0'; read_head++) {
+      if (tags) {
+        if (line[read_head] == '}') {
+          tags = false;
+        }
+      } else {
+        if (line[read_head] == '{') {
+          tags = true;
+        } else {
+          if (read_head != write_head) {
+            line[write_head] = line[read_head];
+          }
+          write_head++;
+        }
+      }
+    }
+    line[write_head] = '\0';
+
+    lyrics_len += write_head + 1;
+    res->lyrics = realloc(res->lyrics, sizeof(char) * (lyrics_len));
+
+    if (res->lyrics[0] != '\0')
+      strcat(res->lyrics, "\n");
+    strcat(res->lyrics, line);
+
+    free(line);
+  }
+  printf("%s\n", res->lyrics);
+}
+
+void dakara_check_subtitle_track(ASS_Track *track, dakara_check_sub_results *res) {
+  dakara_check_subtitle_events(track, res);
+}
+
+dakara_check_sub_results *dakara_check_sub_results_init(void) {
+  dakara_check_sub_results *res = malloc(sizeof(dakara_check_sub_results));
+  res->report.passed = 0;
+  res->lyrics = malloc(1);
+  res->lyrics[0] = '\0';
+
+  return res;
+}
+
+dakara_check_sub_results *dakara_check_subtitle_file(char *filepath) {
+  dakara_check_sub_results *res = NULL;
+
+  ASS_Library *library = ass_library_init();
+  if (library == NULL) {
+    perror("failed to allocate ASS library");
+    return res;
+  }
+
+  ASS_Track *track = ass_read_file(library, filepath, "UTF-8");
+  if (track == NULL) {
+    perror("failed to read ASS track from file");
+    goto end;
+  }
+
+  res = dakara_check_sub_results_init();
+  if (res == NULL) {
+    perror("failed to allocate memory for results");
+  }
+
+  dakara_check_subtitle_track(track, res);
+
+  ass_free_track(track);
+end:
+  ass_library_done(library);
+  return res;
+}
+
+dakara_check_sub_results *dakara_check_subtitle_memory(char *memory, size_t bufsize) {
+  dakara_check_sub_results *res = NULL;
+
+  ASS_Library *library = ass_library_init();
+  if (library == NULL) {
+    perror("failed to allocate ASS library");
+    return res;
+  }
+
+  ASS_Track *track = ass_read_memory(library, memory, bufsize, "UTF-8");
+  if (track == NULL) {
+    perror("failed to read ASS track from buffer");
+    goto end;
+  }
+
+  res = dakara_check_sub_results_init();
+  if (res == NULL) {
+    perror("failed to allocate memory for results");
+  }
+
+  dakara_check_subtitle_track(track, res);
+
+  ass_free_track(track);
+end:
+  ass_library_done(library);
+  return res;
+}
+
+void dakara_check_sub_results_free(dakara_check_sub_results *res) {
+  free(res->lyrics);
+  free(res);
 }

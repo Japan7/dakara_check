@@ -8,8 +8,8 @@ project(
 
 git = find_program('git', required: false)
 
+# avoids detection issues in some cases, such as git worktrees
 if git.found()
-    # avoids detection issues in some cases, such as git worktrees
     version_h = vcs_tag(
         command: [git, 'describe', '--dirty=+', '--always'],
         input: 'version.h.in',
@@ -22,6 +22,7 @@ endif
 deps = []
 deps += dependency('libavformat', fallback: ['ffmpeg', 'libavformat_dep'])
 deps += dependency('libavutil', fallback: ['ffmpeg', 'libavutil_dep'])
+deps += dependency('libass', fallback: 'libass')
 
 deps += dependency(
     'ffmpegaacsucks',
@@ -46,6 +47,15 @@ libdakara_check = library(
 dakara_check_exe = executable(
     'dakara_check',
     'dakara_check.c',
+    dependencies: deps,
+    include_directories: inc,
+    link_with: libdakara_check,
+    install: true,
+)
+
+dakara_check_sub_exe = executable(
+    'dakara_check_sub',
+    'dakara_check_sub.c',
     dependencies: deps,
     include_directories: inc,
     link_with: libdakara_check,
