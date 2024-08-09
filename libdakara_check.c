@@ -299,7 +299,6 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
 
     free(line);
   }
-  printf("%s\n", res->lyrics);
 }
 
 void dakara_check_subtitle_track(ASS_Track *track, dakara_check_sub_results *res) {
