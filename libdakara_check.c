@@ -45,6 +45,9 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
+      if (st->disposition & AV_DISPOSITION_ATTACHED_PIC) {
+        break;
+      }
       if (duration <= 0)
         duration = st->duration * st->time_base.num / st->time_base.den;
       if (video_streams++ > 0) {
@@ -180,9 +183,17 @@ char const *dakara_check_str_report(union dakara_check_results_report *report) {
     report->errors.too_many_video_streams = false;
     return "too many video tracks";
   }
+  if (report->errors.no_video_stream) {
+    report->errors.no_video_stream = false;
+    return "no video track found";
+  }
   if (report->errors.too_many_audio_streams) {
     report->errors.too_many_audio_streams = false;
     return "too many audio tracks";
+  }
+  if (report->errors.no_audio_stream) {
+    report->errors.no_audio_stream = false;
+    return "no audio track found";
   }
   if (report->errors.unknown_stream) {
     report->errors.unknown_stream = false;
