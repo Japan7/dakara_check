@@ -299,9 +299,7 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
             // ignore
             break;
           default:
-            if (read_head != write_head) {
-              line[write_head] = line[read_head];
-            }
+            line[write_head] = line[read_head];
             write_head++;
           }
         } else {
