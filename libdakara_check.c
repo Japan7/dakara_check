@@ -371,6 +371,7 @@ end:
 }
 
 void dakara_check_sub_results_free(dakara_check_sub_results *res) {
-  free(res->lyrics);
+  if (res != NULL)
+    free(res->lyrics);
   free(res);
 }
