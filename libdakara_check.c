@@ -296,11 +296,10 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
           switch (line[read_head]) {
           case 'n':
           case 'N':
-            // ignore
+            line[write_head++] = '\n';
             break;
           default:
-            line[write_head] = line[read_head];
-            write_head++;
+            line[write_head++] = line[read_head];
           }
         } else {
           switch (line[read_head]) {
