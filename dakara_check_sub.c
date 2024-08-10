@@ -19,8 +19,11 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
   }
 
-
   dakara_check_sub_results *res = dakara_check_subtitle_file(argv[1]);
+  if (res != NULL) {
+    printf("%s\n", res->lyrics);
+  }
+
   dakara_check_sub_results_free(res);
 
   return EXIT_SUCCESS;

@@ -271,20 +271,43 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
 
     unsigned long write_head = 0;
     bool tags = false;
+    bool drawing = false;
 
     for (unsigned long read_head = 0; line[read_head] != '\0'; read_head++) {
       if (tags) {
+        switch (line[read_head]) {
+        case '{':
+          tags = false;
+          break;
+        case '\\':
+          if (line[read_head + 1] == 'p') {
+            // \p0, disables \pn is valid and enables drawing mode
+            drawing = line[read_head + 2] != '0';
+          }
+          break;
+        }
         if (line[read_head] == '}') {
           tags = false;
         }
       } else {
-        if (line[read_head] == '{') {
+        switch (line[read_head]) {
+        case '{':
           tags = true;
-        } else {
-          if (read_head != write_head) {
-            line[write_head] = line[read_head];
+          break;
+        case '\\':
+          read_head++;
+          if (line[read_head] != 'n' && line[read_head] != 'N') {
+            goto write;
           }
-          write_head++;
+          break;
+        default:
+        write:
+          if (!drawing) {
+            if (read_head != write_head) {
+              line[write_head] = line[read_head];
+            }
+            write_head++;
+          }
         }
       }
     }
