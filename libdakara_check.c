@@ -272,11 +272,12 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
     unsigned long write_head = 0;
     bool tags = false;
     bool drawing = false;
+    bool escaped = false;
 
     for (unsigned long read_head = 0; line[read_head] != '\0'; read_head++) {
       if (tags) {
         switch (line[read_head]) {
-        case '{':
+        case '}':
           tags = false;
           break;
         case '\\':
@@ -289,20 +290,29 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
         if (line[read_head] == '}') {
           tags = false;
         }
-      } else {
-        switch (line[read_head]) {
-        case '{':
-          tags = true;
-          break;
-        case '\\':
-          read_head++;
-          if (line[read_head] != 'n' && line[read_head] != 'N') {
-            goto write;
+      } else if (!drawing) {
+        if (escaped) {
+          escaped = false;
+          switch (line[read_head]) {
+          case 'n':
+          case 'N':
+            // ignore
+            break;
+          default:
+            if (read_head != write_head) {
+              line[write_head] = line[read_head];
+            }
+            write_head++;
           }
-          break;
-        default:
-        write:
-          if (!drawing) {
+        } else {
+          switch (line[read_head]) {
+          case '{':
+            tags = true;
+            break;
+          case '\\':
+            escaped = true;
+            break;
+          default:
             if (read_head != write_head) {
               line[write_head] = line[read_head];
             }
