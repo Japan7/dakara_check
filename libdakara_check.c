@@ -255,6 +255,8 @@ int dakara_check_external_sub_file_for(char *filepath) {
   return dakara_check_sub_file(sub_filepath);
 }
 
+#define NBSP '\xa0'
+
 /*
  * check events of the current track
  */
@@ -298,7 +300,15 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
           case 'N':
             line[write_head++] = '\n';
             break;
+          case 'h':
+            line[write_head++] = NBSP;
+            break;
+          case '{':
+          case '}':
+            line[write_head++] = line[read_head];
+            break;
           default:
+            line[write_head++] = '\\';
             line[write_head++] = line[read_head];
           }
         } else {
