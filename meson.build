@@ -30,8 +30,8 @@ deps += dependency(
 
 deps += dependency(
     'ffmpegaacsucks',
-    version: '>=2.0.0',
-    fallback: ['ffmpegaacsucks', 'ffmpegaacsucks_dep'],
+    version: '>=2.0.2',
+    default_options: ['bin=false'],
 )
 
 install_headers('include/dakara_check.h')
