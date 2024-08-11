@@ -1,0 +1,1 @@
+option('programs', type: 'boolean', value: true, description: 'build dakara_check programs')

@@ -48,23 +48,25 @@ libdakara_check = library(
     soversion: '4',
 )
 
-dakara_check_exe = executable(
-    'dakara_check',
-    'dakara_check.c',
-    dependencies: deps,
-    include_directories: inc,
-    link_with: libdakara_check,
-    install: true,
-)
+if get_option('programs')
+    executable(
+        'dakara_check',
+        'dakara_check.c',
+        dependencies: deps,
+        include_directories: inc,
+        link_with: libdakara_check,
+        install: true,
+    )
 
-dakara_check_sub_exe = executable(
-    'dakara_check_sub',
-    'dakara_check_sub.c',
-    dependencies: deps,
-    include_directories: inc,
-    link_with: libdakara_check,
-    install: true,
-)
+    executable(
+        'dakara_check_sub',
+        'dakara_check_sub.c',
+        dependencies: deps,
+        include_directories: inc,
+        link_with: libdakara_check,
+        install: true,
+    )
+endif
 
 pkg = import('pkgconfig')
 pkg.generate(libdakara_check)
