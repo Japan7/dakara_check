@@ -294,7 +294,7 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
           tags = false;
           break;
         case '\\':
-          if (line[read_head + 1] == 'p') {
+          if (line[read_head + 1] == 'p' && line[read_head] <= '9' && line[read_head] >= 0) {
             // \p0, disables \pn is valid and enables drawing mode
             drawing = line[read_head + 2] != '0';
           }
