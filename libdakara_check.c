@@ -2,8 +2,10 @@
 #include <ass/ass.h>
 #include <ass/ass_types.h>
 #include <errno.h>
-#include <ffmpegaacsucks.h>
+#include <libavcodec/codec_id.h>
 #include <libavcodec/codec_par.h>
+#include <libavcodec/defs.h>
+#include <libavcodec/packet.h>
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 #include <libavutil/avutil.h>
@@ -19,7 +21,34 @@
 
 #include "version.h"
 
+#define FFAAC_LAVC_SIGNATURE "Lavc"
+
 const char *dakara_check_version(void) { return DAKARA_CHECK_VERSION; }
+
+bool dakara_check_ffaac_stream_packet(AVPacket *pkt) {
+  int pkt_type, skip, namelen;
+
+  uint8_t b = pkt->data[0];
+  pkt_type = (b & 0xe0) >> 5;
+  if (pkt_type != 6) {
+    if (getenv("DAKARA_CHECK_DEBUG") != NULL)
+      fprintf(stderr,
+              "unexpected packet type found for Lavc/FFMPEG AAC in stream %d "
+              "(%d) %x\n",
+              pkt->stream_index, pkt_type, b);
+    return false;
+  }
+
+  namelen = (b & 0x1e) >> 1;
+
+  if (namelen == 15)
+    skip = 3;
+  else
+    skip = 2;
+
+  char *comment = (char *)pkt->data + skip;
+  return (strncmp(comment, FFAAC_LAVC_SIGNATURE, 4)) == 0;
+}
 
 void dakara_check_results_init(dakara_check_results *res) {
   res->duration = 0;
@@ -29,6 +58,7 @@ void dakara_check_results_init(dakara_check_results *res) {
 static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
   unsigned int video_streams = 0;
   unsigned int audio_streams = 0;
+  unsigned int aac_streams = 0;
 
   int64_t duration = 0;
 
@@ -53,21 +83,30 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
       if (video_streams++ > 0) {
         res->report.errors.too_many_video_streams = true;
       }
+      st->discard = AVDISCARD_ALL;
       break;
     case AVMEDIA_TYPE_AUDIO:
       // we allow up to 1 audio streams in each file
       if (++audio_streams > 1) {
         res->report.errors.too_many_audio_streams = true;
       }
+      if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
+        aac_streams++;
+      } else {
+        st->discard = AVDISCARD_ALL;
+      }
       break;
     case AVMEDIA_TYPE_SUBTITLE:
       res->report.errors.internal_sub_stream = 1;
+      st->discard = AVDISCARD_ALL;
       break;
     case AVMEDIA_TYPE_ATTACHMENT:
       res->report.errors.attachment_stream = 1;
+      st->discard = AVDISCARD_ALL;
       break;
     default:
       res->report.errors.unknown_stream = 1;
+      st->discard = AVDISCARD_ALL;
     }
   }
 
@@ -93,11 +132,32 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
     res->duration = duration;
   }
 
-  struct ffaacsucks_result *ffaac_res = ffaacsucks_check_avfcontext(s);
-  if (ffaac_res->n_streams > 0) {
-    res->report.errors.lavc_aac_stream = 1;
+  if (aac_streams > 0) {
+    AVPacket *pkt = av_packet_alloc();
+
+    while (aac_streams > 0) {
+      int ret = av_read_frame(s, pkt);
+      if (ret < 0) {
+        perror("av_read_frame");
+        res->report.errors.io_error = true;
+        break;
+      }
+
+      if (s->streams[pkt->stream_index]->codecpar->codec_id != AV_CODEC_ID_AAC) {
+        fprintf(stderr, "not aac stream\n");
+      }
+
+      if (dakara_check_ffaac_stream_packet(pkt))
+        res->report.errors.lavc_aac_stream = true;
+
+      s->streams[pkt->stream_index]->discard = AVDISCARD_ALL;
+      aac_streams--;
+
+      av_packet_unref(pkt);
+    }
+
+    av_packet_free(&pkt);
   }
-  ffaacsucks_result_free(ffaac_res);
 }
 
 void dakara_check(char *filepath, dakara_check_results *res) {
@@ -294,7 +354,8 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
           tags = false;
           break;
         case '\\':
-          if (line[read_head + 1] == 'p' && line[read_head+2] <= '9' && line[read_head+2] >= '0') {
+          if (line[read_head + 1] == 'p' && line[read_head + 2] <= '9' &&
+              line[read_head + 2] >= '0') {
             // \p0, disables \pn is valid and enables drawing mode
             drawing = line[read_head + 2] != '0';
           }

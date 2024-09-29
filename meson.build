@@ -20,18 +20,13 @@ else
 endif
 
 deps = []
-deps += dependency('libavformat', fallback: ['ffmpeg', 'libavformat_dep'])
-deps += dependency('libavutil', fallback: ['ffmpeg', 'libavutil_dep'])
+deps += dependency('libavformat')
+deps += dependency('libavcodec')
+deps += dependency('libavutil')
 deps += dependency(
     'libass',
     fallback: 'libass',
     default_options: ['require-system-font-provider=false'],
-)
-
-deps += dependency(
-    'ffmpegaacsucks',
-    version: '>=2.0.2',
-    default_options: ['bin=false'],
 )
 
 install_headers('include/dakara_check.h')
