@@ -4,7 +4,6 @@
 
 #include <ass/ass.h>
 #include <ass/ass_types.h>
-#include <ffmpegaacsucks.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <stdbool.h>

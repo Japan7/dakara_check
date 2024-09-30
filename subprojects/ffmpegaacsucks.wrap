@@ -1,8 +1,0 @@
-[wrap-git]
-directory = ffmpegaacsucks
-url = https://github.com/odrling/ffmpegaacsucks.git
-revision = 2.0.2
-depth = 1
-
-[provide]
-ffmpegaacsucks = ffmpegaacsucks_dep
