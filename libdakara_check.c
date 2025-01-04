@@ -426,6 +426,19 @@ dakara_check_sub_results *dakara_check_sub_results_init(void) {
   return res;
 }
 
+// don’t show info logs
+#define DAKARA_CHECK_ASS_LOG_LEVEL 2
+
+void dakara_check_ass_message_callback(int level, const char *fmt, va_list va, void *data) {
+  (void)data;
+  if (level > DAKARA_CHECK_ASS_LOG_LEVEL) {
+    return;
+  }
+  printf("[ass] ");
+  vfprintf(stderr, fmt, va);
+  printf("\n");
+}
+
 dakara_check_sub_results *dakara_check_subtitle_file(char *filepath) {
   dakara_check_sub_results *res = NULL;
 
@@ -434,6 +447,8 @@ dakara_check_sub_results *dakara_check_subtitle_file(char *filepath) {
     perror("failed to allocate ASS library");
     return res;
   }
+
+  ass_set_message_cb(library, dakara_check_ass_message_callback, NULL);
 
   ASS_Track *track = ass_read_file(library, filepath, "UTF-8");
   if (track == NULL) {
@@ -462,6 +477,8 @@ dakara_check_sub_results *dakara_check_subtitle_memory(char *memory, size_t bufs
     perror("failed to allocate ASS library");
     return res;
   }
+
+  ass_set_message_cb(library, dakara_check_ass_message_callback, NULL);
 
   ASS_Track *track = ass_read_memory(library, memory, bufsize, "UTF-8");
   if (track == NULL) {
