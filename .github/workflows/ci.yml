@@ -36,7 +36,7 @@ jobs:
             platform: linux/riscv64
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -89,7 +89,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Podman login
         uses: redhat-actions/podman-login@v1
