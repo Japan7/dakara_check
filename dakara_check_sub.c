@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "dakara_check.h"
+#include "defer.h"
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -23,8 +24,7 @@ int main(int argc, char *argv[]) {
   if (res != NULL) {
     printf("%s\n", res->lyrics);
   }
-
-  dakara_check_sub_results_free(res);
+  defer { dakara_check_sub_results_free(res); }
 
   return EXIT_SUCCESS;
 }
