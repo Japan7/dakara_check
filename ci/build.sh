@@ -1,5 +1,6 @@
 #!/bin/sh
 export LDFLAGS="-Wl,-Bsymbolic"
+export CFLAGS="-fdefer-ts"
 
 if [ "$ARCH" != x86_64 ]; then
     extra_args="--cross-file ci/$ARCH-chimera-linux-musl.txt"
