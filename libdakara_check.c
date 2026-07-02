@@ -105,7 +105,7 @@ bool dakara_check_ffaac_stream_packet(AVPacket *pkt) {
   char *comment = (char *)pkt->data + skip;
   struct lavc_version version = parse_lavc_version(comment);
 
-  return version.islavc && version.major <= 63 && version.minor < 3;
+  return version.islavc && version.major <= 63 && version.minor < 4;
 }
 
 void dakara_check_results_init(dakara_check_results *res) {
