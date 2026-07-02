@@ -24,8 +24,62 @@
 #include "defer.h"
 
 constexpr char FFAAC_LAVC_SIGNATURE[] = "Lavc";
+// size of FFAAC_LAVC_SIGNATURE_LEN without the trailing null character
+constexpr int FFAAC_LAVC_SIGNATURE_LEN = sizeof(FFAAC_LAVC_SIGNATURE) - 1;
 
 const char *dakara_check_version(void) { return DAKARA_CHECK_VERSION; }
+
+struct lavc_version {
+  bool error;
+  bool islavc;
+  long major;
+  long minor;
+  long micro;
+};
+
+struct lavc_version parse_lavc_version(char *comment) {
+  struct lavc_version res;
+  res.major = 0;
+  res.minor = 0;
+  res.micro = 0;
+
+  res.islavc = strncmp(comment, FFAAC_LAVC_SIGNATURE, FFAAC_LAVC_SIGNATURE_LEN) == 0;
+  if (!res.islavc) {
+    return res;
+  }
+
+  // major
+  char *start = &comment[FFAAC_LAVC_SIGNATURE_LEN];
+  char *dotpos = strchr(start, '.');
+  char *end = NULL;
+  res.major = strtol(start, &end, 10);
+  if (dotpos != end) {
+    fprintf(stderr, "failed to parse lavc major version: %s", comment);
+    res.error = true;
+    return res;
+  }
+
+  // minor
+  start = dotpos + 1;
+  dotpos = strchr(start, '.');
+  res.minor = strtol(start, &end, 10);
+  if (dotpos != end) {
+    fprintf(stderr, "failed to parse lavc minor version: %s", comment);
+    res.error = true;
+    return res;
+  }
+
+  // micro
+  start = dotpos + 1;
+  char *endpos = strchr(start, 0);
+  res.micro = strtol(start, &end, 10);
+  if (endpos != end) {
+    fprintf(stderr, "failed to parse lavc micro version: %s", comment);
+    res.error = true;
+  }
+
+  return res;
+}
 
 bool dakara_check_ffaac_stream_packet(AVPacket *pkt) {
   int pkt_type, skip, namelen;
@@ -49,7 +103,9 @@ bool dakara_check_ffaac_stream_packet(AVPacket *pkt) {
     skip = 2;
 
   char *comment = (char *)pkt->data + skip;
-  return (strncmp(comment, FFAAC_LAVC_SIGNATURE, 4)) == 0;
+  struct lavc_version version = parse_lavc_version(comment);
+
+  return version.islavc && version.major <= 63 && version.minor < 3;
 }
 
 void dakara_check_results_init(dakara_check_results *res) {
