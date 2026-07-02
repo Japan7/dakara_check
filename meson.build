@@ -3,7 +3,7 @@ project(
     'c',
     license: 'LGPL-3.0-only',
     version: '5.0.0',
-    default_options: ['warning_level=2', 'c_std=gnu2y'],
+    default_options: ['warning_level=2', 'c_std=gnu23'],
 )
 
 git = find_program('git', required: false)
