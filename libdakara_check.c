@@ -290,60 +290,127 @@ bool dakara_check_passed(struct dakara_check_report report) {
            report.no_video_stream || report.no_audio_stream || report.io_error);
 }
 
-char const *dakara_check_str_report(struct dakara_check_report *report) {
-  if (report->lavc_aac_stream) {
-    report->lavc_aac_stream = false;
-    return "file contains a LAVC AAC audio stream";
-  }
-  if (report->attachment_stream) {
-    report->attachment_stream = false;
-    return "found an attachment in the file (probably a font)";
-  }
-  if (report->internal_sub_stream) {
-    report->internal_sub_stream = false;
-    return "internal subtitle track should be removed";
-  }
-  if (report->too_many_video_streams) {
-    report->too_many_video_streams = false;
-    return "too many video tracks";
-  }
-  if (report->no_video_stream) {
-    report->no_video_stream = false;
-    return "no video track found";
-  }
-  if (report->too_many_audio_streams) {
-    report->too_many_audio_streams = false;
-    return "too many audio tracks";
-  }
-  if (report->no_audio_stream) {
-    report->no_audio_stream = false;
-    return "no audio track found";
-  }
-  if (report->unknown_stream) {
-    report->unknown_stream = false;
-    return "found an unknown track";
-  }
-  if (report->no_duration) {
-    report->no_duration = false;
-    return "failed to find file duration";
-  }
-  if (report->global_duration) {
-    report->global_duration = false;
-    return "using global file duration, may or may not be correct";
-  }
+/*
+ * Return diagnostics for errors detected in the file.
+ * Order should follow error level (DC_ERROR > DC_WARNING > DC_INFO)
+ */
+struct dakara_check_diagnostic dakara_check_get_diagnostic(struct dakara_check_report *report) {
+  struct dakara_check_diagnostic diagnostic;
+  diagnostic.error_level = DC_ERROR;
+
   if (report->io_error) {
     report->io_error = false;
-    return "failed to open file";
+    diagnostic.report_id = DC_IO_ERROR;
+    diagnostic.message = "Failed to decode file.";
+    return diagnostic;
   }
 
-  return nullptr;
+  if (report->internal_sub_stream) {
+    report->internal_sub_stream = false;
+    diagnostic.report_id = DC_INTERNAL_SUBS;
+    diagnostic.message = "Internal subtitle track should be removed from the file";
+    return diagnostic;
+  }
+
+  if (report->too_many_video_streams) {
+    report->too_many_video_streams = false;
+    diagnostic.report_id = DC_TOO_MANY_VIDEO_STREAMS;
+    diagnostic.message = "This file contains more than one video track. There should only be one.";
+    return diagnostic;
+  }
+
+  if (report->no_video_stream) {
+    report->no_video_stream = false;
+    diagnostic.report_id = DC_NO_VIDEO_STREAM;
+    diagnostic.message = "No video track found when there should be one.";
+    return diagnostic;
+  }
+
+  if (report->too_many_audio_streams) {
+    report->too_many_audio_streams = false;
+    diagnostic.report_id = DC_TOO_MANY_AUDIO_STREAMS;
+    diagnostic.message =
+        "Found more than two audio tracks. There should be at most two audio tracks in a file.";
+    return diagnostic;
+  }
+
+  if (report->no_audio_stream) {
+    report->no_audio_stream = false;
+    diagnostic.report_id = DC_NO_AUDIO_STREAM;
+    diagnostic.message = "No audio track found when there should be one.";
+    return diagnostic;
+  }
+
+  if (report->lavc_aac_stream) {
+    report->lavc_aac_stream = false;
+    diagnostic.report_id = DC_LAVC_AAC_STREAM,
+    diagnostic.message =
+        "File contains a LAVC AAC audio stream from a version of FFmpeg that is known to cause "
+        "audio issues. Reencode the stream in opus or update your FFmpeg version.";
+    return diagnostic;
+  }
+
+  if (report->no_duration) {
+    report->no_duration = false;
+    diagnostic.report_id = DC_NO_DURATION_FOUND;
+    diagnostic.message = "Failed to find file duration.";
+    return diagnostic;
+  }
+
+  diagnostic.error_level = DC_WARNING;
+
+  if (report->global_duration) {
+    report->global_duration = false;
+    diagnostic.report_id = DC_GLOBAL_DURATION;
+    diagnostic.message = "Using global file duration, may or may not be correct";
+    return diagnostic;
+  }
+
+  diagnostic.error_level = DC_INFO;
+
+  if (report->unknown_stream) {
+    report->unknown_stream = false;
+    diagnostic.report_id = DC_UNKNOWN_STREAM;
+    diagnostic.message = "Found an unknown track type in the file.";
+    return diagnostic;
+  }
+
+  if (report->attachment_stream) {
+    report->attachment_stream = false;
+    diagnostic.report_id = DC_ATTACHMENT_STREAM,
+    diagnostic.message =
+        "Found an attachment in the file (probably a font). Remove the attachment from the file as "
+        "it should not be necessary. Fonts should be uploaded to Karaberus.";
+    return diagnostic;
+  }
+
+  diagnostic.report_id = DC_DONE;
+  diagnostic.message = "";
+  return diagnostic;
 }
 
-void dakara_check_print_results(dakara_check_results *res, char *filepath) {
-  struct dakara_check_report report = res->report;
-  char const *msg;
-  while ((msg = dakara_check_str_report(&report)) != nullptr) {
-    fprintf(stderr, "%s: %s\n", filepath, msg);
+static inline char *get_error_level_prefix(enum dakara_check_error_level level) {
+  if (level == DC_ERROR)
+    return "ERROR";
+
+  if (level == DC_WARNING)
+    return "WARNING";
+
+  if (level == DC_INFO)
+    return "INFO";
+
+  abort();
+}
+
+static inline void print_diagnostic(struct dakara_check_diagnostic diagnostic, char *filepath) {
+  fprintf(stderr, "%s: [%s] %s\n", filepath, get_error_level_prefix(diagnostic.error_level),
+          diagnostic.message);
+}
+
+void dakara_check_print_diagnostics(struct dakara_check_report report, char *filepath) {
+  struct dakara_check_diagnostic diagnostic;
+  while ((diagnostic = dakara_check_get_diagnostic(&report)).report_id != DC_DONE) {
+    print_diagnostic(diagnostic, filepath);
   }
 }
 
@@ -570,4 +637,29 @@ void dakara_check_sub_results_free(dakara_check_sub_results *res) {
   if (res != nullptr)
     free(res->lyrics);
   free(res);
+}
+
+struct dakara_check_diagnostic
+dakara_check_sub_get_diagnostic(struct dakara_check_sub_report *report) {
+  struct dakara_check_diagnostic diagnostic;
+  diagnostic.error_level = DC_ERROR;
+
+  if (report->io_error) {
+    diagnostic.report_id = DC_IO_ERROR;
+    diagnostic.message = "Failed to parse subtitle file.";
+    return diagnostic;
+  }
+
+  diagnostic.error_level = DC_INFO;
+
+  diagnostic.report_id = DC_DONE;
+  diagnostic.message = "";
+  return diagnostic;
+}
+
+void dakara_check_sub_print_diagnostics(struct dakara_check_sub_report report, char *filepath) {
+  struct dakara_check_diagnostic diagnostic;
+  while ((diagnostic = dakara_check_sub_get_diagnostic(&report)).report_id != DC_DONE) {
+    print_diagnostic(diagnostic, filepath);
+  }
 }

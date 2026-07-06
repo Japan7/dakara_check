@@ -10,6 +10,38 @@
 #include <stddef.h>
 #include <stdint.h>
 
+const char *dakara_check_version(void);
+
+enum dakara_check_report_type : uint8_t {
+  DC_DONE,
+  DC_IO_ERROR,
+  DC_NO_VIDEO_STREAM,
+  DC_NO_AUDIO_STREAM,
+  DC_TOO_MANY_VIDEO_STREAMS,
+  DC_TOO_MANY_AUDIO_STREAMS,
+  DC_INTERNAL_SUBS,
+  DC_ATTACHMENT_STREAM,
+  DC_UNKNOWN_STREAM,
+  DC_NO_DURATION_FOUND,
+  DC_GLOBAL_DURATION,
+  DC_LAVC_AAC_STREAM,
+};
+
+enum dakara_check_error_level : uint8_t {
+  // Information: something worth noting but should not cause issues with playback of the file.
+  DC_INFO,
+  // Warning: May or may not cause issues with playback of the file.
+  DC_WARNING,
+  // Error: Will most likely cause issues with playback of the file.
+  DC_ERROR,
+};
+
+struct dakara_check_diagnostic {
+  enum dakara_check_report_type report_id;
+  enum dakara_check_error_level error_level;
+  const char *message;
+};
+
 struct dakara_check_report {
   // INFO: unknown stream type
   bool unknown_stream : 1;
@@ -35,7 +67,7 @@ struct dakara_check_report {
   bool io_error : 1;
 };
 
-typedef struct {
+typedef struct dakara_check_results {
   uint32_t duration;
   struct dakara_check_report report;
 } dakara_check_results;
@@ -44,21 +76,28 @@ void dakara_check_results_init(dakara_check_results *res);
 
 bool dakara_check_passed(struct dakara_check_report err);
 
-const char *dakara_check_version(void);
-
+// check file from filepath
 void dakara_check(char *filepath, dakara_check_results *res);
 
+// check file from AVIO
 void dakara_check_avio(size_t buffer_size, void *readable,
                        int (*read_packet)(void *, uint8_t *, int),
                        int64_t (*seek)(void *, int64_t, int), dakara_check_results *res);
 
-void dakara_check_print_results(dakara_check_results *res, char *filepath);
+struct dakara_check_diagnostic dakara_check_get_diagnostic(struct dakara_check_report *report);
+void dakara_check_print_diagnostics(struct dakara_check_report report, char *filepath);
 
 int dakara_check_external_sub_file_for(char *filepath);
 
 struct dakara_check_sub_report {
   bool io_error : 1;
 };
+
+bool dakara_check_sub_passed(struct dakara_check_sub_report);
+
+struct dakara_check_diagnostic
+dakara_check_sub_get_diagnostic(struct dakara_check_sub_report *report);
+void dakara_check_sub_print_diagnostics(struct dakara_check_sub_report report, char *filepath);
 
 typedef struct {
   struct dakara_check_sub_report report;
