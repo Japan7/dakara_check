@@ -110,7 +110,8 @@ bool dakara_check_ffaac_stream_packet(AVPacket *pkt) {
 
 void dakara_check_results_init(dakara_check_results *res) {
   res->duration = 0;
-  res->report.passed = 0;
+  struct dakara_check_report report = {0};
+  res->report = report;
 }
 
 static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
@@ -123,7 +124,7 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
   // needed for mpeg-ts files
   if (avformat_find_stream_info(s, nullptr) < 0) {
     perror("failed to find streams");
-    res->report.errors.io_error = true;
+    res->report.io_error = true;
     return;
   }
 
@@ -139,14 +140,14 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
       if (duration <= 0)
         duration = st->duration * st->time_base.num / st->time_base.den;
       if (video_streams++ > 0) {
-        res->report.errors.too_many_video_streams = true;
+        res->report.too_many_video_streams = true;
       }
       st->discard = AVDISCARD_ALL;
       break;
     case AVMEDIA_TYPE_AUDIO:
       // we allow up to 1 audio streams in each file
       if (++audio_streams > 1) {
-        res->report.errors.too_many_audio_streams = true;
+        res->report.too_many_audio_streams = true;
       }
       if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
         aac_streams++;
@@ -155,37 +156,37 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
       }
       break;
     case AVMEDIA_TYPE_SUBTITLE:
-      res->report.errors.internal_sub_stream = 1;
+      res->report.internal_sub_stream = 1;
       st->discard = AVDISCARD_ALL;
       break;
     case AVMEDIA_TYPE_ATTACHMENT:
-      res->report.errors.attachment_stream = 1;
+      res->report.attachment_stream = 1;
       st->discard = AVDISCARD_ALL;
       break;
     default:
-      res->report.errors.unknown_stream = 1;
+      res->report.unknown_stream = 1;
       st->discard = AVDISCARD_ALL;
     }
   }
 
   if (video_streams == 0)
-    res->report.errors.no_video_stream = true;
+    res->report.no_video_stream = true;
 
   if (audio_streams == 0)
-    res->report.errors.no_audio_stream = true;
+    res->report.no_audio_stream = true;
 
   // if duration was not found in the streams
   if (duration <= 0) {
     if (s->duration > 0) {
       duration = s->duration / AV_TIME_BASE;
-      res->report.errors.global_duration = true;
+      res->report.global_duration = true;
     } else {
-      res->report.errors.no_duration = true;
+      res->report.no_duration = true;
     }
   }
 
   if (duration >= INT_MAX) {
-    res->report.errors.no_duration = true;
+    res->report.no_duration = true;
   } else {
     res->duration = duration;
   }
@@ -203,7 +204,7 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
 
       if (ret < 0) {
         perror("av_read_frame");
-        res->report.errors.io_error = true;
+        res->report.io_error = true;
         break;
       }
 
@@ -213,7 +214,7 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
       }
 
       if (dakara_check_ffaac_stream_packet(pkt))
-        res->report.errors.lavc_aac_stream = true;
+        res->report.lavc_aac_stream = true;
 
       aac_streams--;
     }
@@ -227,7 +228,7 @@ void dakara_check(char *filepath, dakara_check_results *res) {
   int ret = avformat_open_input(&s, filepath, nullptr, NULL);
   if (ret < 0) {
     fprintf(stderr, "failed to load file %s: %s\n", filepath, strerror(errno));
-    res->report.errors.io_error = true;
+    res->report.io_error = true;
     return;
   }
   defer {
@@ -247,13 +248,14 @@ void dakara_check_avio(size_t buffer_size, void *readable,
 
   uint8_t *avio_ctx_buffer = av_malloc(buffer_size);
   if (avio_ctx_buffer == nullptr) {
-    res->report.errors.io_error = true;
+    res->report.io_error = true;
     perror("could not allocate AVIO buffer");
   }
 
-  avio_ctx = avio_alloc_context(avio_ctx_buffer, buffer_size, 0, readable, read_packet, nullptr, seek);
+  avio_ctx =
+      avio_alloc_context(avio_ctx_buffer, buffer_size, 0, readable, read_packet, nullptr, seek);
   if (avio_ctx == nullptr) {
-    res->report.errors.io_error = true;
+    res->report.io_error = true;
     perror("could not allocate AVIO context");
     av_freep(avio_ctx_buffer);
   }
@@ -264,7 +266,7 @@ void dakara_check_avio(size_t buffer_size, void *readable,
 
   fmt_ctx = avformat_alloc_context();
   if (fmt_ctx == nullptr) {
-    res->report.errors.io_error = true;
+    res->report.io_error = true;
     perror("could not allocate avformat context");
   }
   defer { avformat_free_context(fmt_ctx); }
@@ -273,7 +275,7 @@ void dakara_check_avio(size_t buffer_size, void *readable,
 
   int ret = avformat_open_input(&fmt_ctx, nullptr, NULL, NULL);
   if (ret < 0) {
-    res->report.errors.io_error = true;
+    res->report.io_error = true;
     fprintf(stderr, "could not open avio input\n");
   }
   defer { avformat_close_input(&fmt_ctx); }
@@ -281,49 +283,56 @@ void dakara_check_avio(size_t buffer_size, void *readable,
   dakara_check_avf(fmt_ctx, res);
 }
 
-char const *dakara_check_str_report(union dakara_check_results_report *report) {
-  if (report->errors.lavc_aac_stream) {
-    report->errors.lavc_aac_stream = false;
+bool dakara_check_passed(struct dakara_check_report report) {
+  return !(report.unknown_stream || report.lavc_aac_stream || report.too_many_video_streams ||
+           report.too_many_audio_streams || report.internal_sub_stream ||
+           report.attachment_stream || report.global_duration || report.no_duration ||
+           report.no_video_stream || report.no_audio_stream || report.io_error);
+}
+
+char const *dakara_check_str_report(struct dakara_check_report *report) {
+  if (report->lavc_aac_stream) {
+    report->lavc_aac_stream = false;
     return "file contains a LAVC AAC audio stream";
   }
-  if (report->errors.attachment_stream) {
-    report->errors.attachment_stream = false;
+  if (report->attachment_stream) {
+    report->attachment_stream = false;
     return "found an attachment in the file (probably a font)";
   }
-  if (report->errors.internal_sub_stream) {
-    report->errors.internal_sub_stream = false;
+  if (report->internal_sub_stream) {
+    report->internal_sub_stream = false;
     return "internal subtitle track should be removed";
   }
-  if (report->errors.too_many_video_streams) {
-    report->errors.too_many_video_streams = false;
+  if (report->too_many_video_streams) {
+    report->too_many_video_streams = false;
     return "too many video tracks";
   }
-  if (report->errors.no_video_stream) {
-    report->errors.no_video_stream = false;
+  if (report->no_video_stream) {
+    report->no_video_stream = false;
     return "no video track found";
   }
-  if (report->errors.too_many_audio_streams) {
-    report->errors.too_many_audio_streams = false;
+  if (report->too_many_audio_streams) {
+    report->too_many_audio_streams = false;
     return "too many audio tracks";
   }
-  if (report->errors.no_audio_stream) {
-    report->errors.no_audio_stream = false;
+  if (report->no_audio_stream) {
+    report->no_audio_stream = false;
     return "no audio track found";
   }
-  if (report->errors.unknown_stream) {
-    report->errors.unknown_stream = false;
+  if (report->unknown_stream) {
+    report->unknown_stream = false;
     return "found an unknown track";
   }
-  if (report->errors.no_duration) {
-    report->errors.no_duration = false;
+  if (report->no_duration) {
+    report->no_duration = false;
     return "failed to find file duration";
   }
-  if (report->errors.global_duration) {
-    report->errors.global_duration = false;
+  if (report->global_duration) {
+    report->global_duration = false;
     return "using global file duration, may or may not be correct";
   }
-  if (report->errors.io_error) {
-    report->errors.io_error = false;
+  if (report->io_error) {
+    report->io_error = false;
     return "failed to open file";
   }
 
@@ -331,7 +340,7 @@ char const *dakara_check_str_report(union dakara_check_results_report *report) {
 }
 
 void dakara_check_print_results(dakara_check_results *res, char *filepath) {
-  union dakara_check_results_report report = res->report;
+  struct dakara_check_report report = res->report;
   char const *msg;
   while ((msg = dakara_check_str_report(&report)) != nullptr) {
     fprintf(stderr, "%s: %s\n", filepath, msg);
@@ -396,7 +405,7 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
     line = strdup(track->events[i].Text);
     if (line == nullptr) {
       perror("failed to duplicate string");
-      res->report.errors.io_error = true;
+      res->report.io_error = true;
       return;
     }
 
@@ -477,7 +486,7 @@ void dakara_check_subtitle_track(ASS_Track *track, dakara_check_sub_results *res
 
 dakara_check_sub_results *dakara_check_sub_results_init(void) {
   dakara_check_sub_results *res = malloc(sizeof(dakara_check_sub_results));
-  res->report.passed = 0;
+  res->report.io_error = 0;
   res->lyrics = malloc(1);
   res->lyrics[0] = '\0';
 

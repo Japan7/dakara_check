@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   dakara_check(argv[1], &res);
 
   printf("%s duration: %d\n", argv[1], res.duration);
-  if (res.report.passed == 0) {
+  if (dakara_check_passed(res.report)) {
     return EXIT_SUCCESS;
   }
 

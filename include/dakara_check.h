@@ -7,9 +7,10 @@
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
-struct dakara_check_results_errors_switches {
+struct dakara_check_report {
   // INFO: unknown stream type
   bool unknown_stream : 1;
   // WARNING: audio track encoded with LAVC AAC codec
@@ -34,18 +35,14 @@ struct dakara_check_results_errors_switches {
   bool io_error : 1;
 };
 
-union dakara_check_results_report {
-  struct dakara_check_results_errors_switches errors;
-  // checks passed if 0, failed otherwise
-  uint32_t passed;
-};
-
 typedef struct {
   uint32_t duration;
-  union dakara_check_results_report report;
+  struct dakara_check_report report;
 } dakara_check_results;
 
 void dakara_check_results_init(dakara_check_results *res);
+
+bool dakara_check_passed(struct dakara_check_report err);
 
 const char *dakara_check_version(void);
 
@@ -59,18 +56,12 @@ void dakara_check_print_results(dakara_check_results *res, char *filepath);
 
 int dakara_check_external_sub_file_for(char *filepath);
 
-struct dakara_check_sub_results_errors_switches {
+struct dakara_check_sub_report {
   bool io_error : 1;
 };
 
-union dakara_check_sub_results_report {
-  struct dakara_check_sub_results_errors_switches errors;
-  // checks passed if 0, failed otherwise
-  uint32_t passed;
-};
-
 typedef struct {
-  union dakara_check_sub_results_report report;
+  struct dakara_check_sub_report report;
   char *lyrics;
 } dakara_check_sub_results;
 
