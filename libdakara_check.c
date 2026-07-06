@@ -51,7 +51,7 @@ struct lavc_version parse_lavc_version(char *comment) {
   // major
   char *start = &comment[FFAAC_LAVC_SIGNATURE_LEN];
   char *dotpos = strchr(start, '.');
-  char *end = NULL;
+  char *end = nullptr;
   res.major = strtol(start, &end, 10);
   if (dotpos != end) {
     fprintf(stderr, "failed to parse lavc major version: %s", comment);
@@ -87,7 +87,7 @@ bool dakara_check_ffaac_stream_packet(AVPacket *pkt) {
   uint8_t b = pkt->data[0];
   pkt_type = (b & 0xe0) >> 5;
   if (pkt_type != 6) {
-    if (getenv("DAKARA_CHECK_DEBUG") != NULL)
+    if (getenv("DAKARA_CHECK_DEBUG") != nullptr)
       fprintf(stderr,
               "unexpected packet type found for Lavc/FFMPEG AAC in stream %d "
               "(%d) %x\n",
@@ -121,7 +121,7 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
   int64_t duration = 0;
 
   // needed for mpeg-ts files
-  if (avformat_find_stream_info(s, NULL) < 0) {
+  if (avformat_find_stream_info(s, nullptr) < 0) {
     perror("failed to find streams");
     res->report.errors.io_error = true;
     return;
@@ -221,10 +221,10 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
 }
 
 void dakara_check(char *filepath, dakara_check_results *res) {
-  AVFormatContext *s = NULL;
+  AVFormatContext *s = nullptr;
   dakara_check_results_init(res);
 
-  int ret = avformat_open_input(&s, filepath, NULL, NULL);
+  int ret = avformat_open_input(&s, filepath, nullptr, NULL);
   if (ret < 0) {
     fprintf(stderr, "failed to load file %s: %s\n", filepath, strerror(errno));
     res->report.errors.io_error = true;
@@ -241,18 +241,18 @@ void dakara_check(char *filepath, dakara_check_results *res) {
 void dakara_check_avio(size_t buffer_size, void *readable,
                        int (*read_packet)(void *, uint8_t *, int),
                        int64_t (*seek)(void *, int64_t, int), dakara_check_results *res) {
-  AVFormatContext *fmt_ctx = NULL;
-  AVIOContext *avio_ctx = NULL;
+  AVFormatContext *fmt_ctx = nullptr;
+  AVIOContext *avio_ctx = nullptr;
   dakara_check_results_init(res);
 
   uint8_t *avio_ctx_buffer = av_malloc(buffer_size);
-  if (avio_ctx_buffer == NULL) {
+  if (avio_ctx_buffer == nullptr) {
     res->report.errors.io_error = true;
     perror("could not allocate AVIO buffer");
   }
 
-  avio_ctx = avio_alloc_context(avio_ctx_buffer, buffer_size, 0, readable, read_packet, NULL, seek);
-  if (avio_ctx == NULL) {
+  avio_ctx = avio_alloc_context(avio_ctx_buffer, buffer_size, 0, readable, read_packet, nullptr, seek);
+  if (avio_ctx == nullptr) {
     res->report.errors.io_error = true;
     perror("could not allocate AVIO context");
     av_freep(avio_ctx_buffer);
@@ -263,7 +263,7 @@ void dakara_check_avio(size_t buffer_size, void *readable,
   }
 
   fmt_ctx = avformat_alloc_context();
-  if (fmt_ctx == NULL) {
+  if (fmt_ctx == nullptr) {
     res->report.errors.io_error = true;
     perror("could not allocate avformat context");
   }
@@ -271,7 +271,7 @@ void dakara_check_avio(size_t buffer_size, void *readable,
 
   fmt_ctx->pb = avio_ctx;
 
-  int ret = avformat_open_input(&fmt_ctx, NULL, NULL, NULL);
+  int ret = avformat_open_input(&fmt_ctx, nullptr, NULL, NULL);
   if (ret < 0) {
     res->report.errors.io_error = true;
     fprintf(stderr, "could not open avio input\n");
@@ -327,22 +327,22 @@ char const *dakara_check_str_report(union dakara_check_results_report *report) {
     return "failed to open file";
   }
 
-  return NULL;
+  return nullptr;
 }
 
 void dakara_check_print_results(dakara_check_results *res, char *filepath) {
   union dakara_check_results_report report = res->report;
   char const *msg;
-  while ((msg = dakara_check_str_report(&report)) != NULL) {
+  while ((msg = dakara_check_str_report(&report)) != nullptr) {
     fprintf(stderr, "%s: %s\n", filepath, msg);
   }
 }
 
 int dakara_check_sub_file(char *filepath) {
   int ret;
-  AVFormatContext *s = NULL;
+  AVFormatContext *s = nullptr;
 
-  ret = avformat_open_input(&s, filepath, NULL, NULL);
+  ret = avformat_open_input(&s, filepath, nullptr, NULL);
   defer {
     avformat_close_input(&s);
     avformat_free_context(s);
@@ -391,10 +391,10 @@ int dakara_check_external_sub_file_for(char *filepath) {
  */
 void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *res) {
   unsigned long lyrics_len = strlen(res->lyrics) + 1;
-  char *line = NULL;
+  char *line = nullptr;
   for (int i = 0; i < track->n_events; i++) {
     line = strdup(track->events[i].Text);
-    if (line == NULL) {
+    if (line == nullptr) {
       perror("failed to duplicate string");
       res->report.errors.io_error = true;
       return;
@@ -498,26 +498,26 @@ void dakara_check_ass_message_callback(int level, const char *fmt, va_list va, v
 }
 
 dakara_check_sub_results *dakara_check_subtitle_file(char *filepath) {
-  dakara_check_sub_results *res = NULL;
+  dakara_check_sub_results *res = nullptr;
 
   ASS_Library *library = ass_library_init();
-  if (library == NULL) {
+  if (library == nullptr) {
     perror("failed to allocate ASS library");
     return res;
   }
   defer { ass_library_done(library); }
 
-  ass_set_message_cb(library, dakara_check_ass_message_callback, NULL);
+  ass_set_message_cb(library, dakara_check_ass_message_callback, nullptr);
 
   ASS_Track *track = ass_read_file(library, filepath, "UTF-8");
-  if (track == NULL) {
+  if (track == nullptr) {
     perror("failed to read ASS track from file");
     return res;
   }
   defer { ass_free_track(track); }
 
   res = dakara_check_sub_results_init();
-  if (res == NULL) {
+  if (res == nullptr) {
     perror("failed to allocate memory for results");
     return res;
   }
@@ -528,26 +528,26 @@ dakara_check_sub_results *dakara_check_subtitle_file(char *filepath) {
 }
 
 dakara_check_sub_results *dakara_check_subtitle_memory(char *memory, size_t bufsize) {
-  dakara_check_sub_results *res = NULL;
+  dakara_check_sub_results *res = nullptr;
 
   ASS_Library *library = ass_library_init();
-  if (library == NULL) {
+  if (library == nullptr) {
     perror("failed to allocate ASS library");
     return res;
   }
   defer { ass_library_done(library); }
 
-  ass_set_message_cb(library, dakara_check_ass_message_callback, NULL);
+  ass_set_message_cb(library, dakara_check_ass_message_callback, nullptr);
 
   ASS_Track *track = ass_read_memory(library, memory, bufsize, "UTF-8");
-  if (track == NULL) {
+  if (track == nullptr) {
     perror("failed to read ASS track from buffer");
     return res;
   }
   defer { ass_free_track(track); }
 
   res = dakara_check_sub_results_init();
-  if (res == NULL) {
+  if (res == nullptr) {
     perror("failed to allocate memory for results");
     return res;
   }
@@ -558,7 +558,7 @@ dakara_check_sub_results *dakara_check_subtitle_memory(char *memory, size_t bufs
 }
 
 void dakara_check_sub_results_free(dakara_check_sub_results *res) {
-  if (res != NULL)
+  if (res != nullptr)
     free(res->lyrics);
   free(res);
 }

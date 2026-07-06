@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
   }
 
   dakara_check_sub_results *res = dakara_check_subtitle_file(argv[1]);
-  if (res != NULL) {
+  if (res != nullptr) {
     printf("%s\n", res->lyrics);
   }
   defer { dakara_check_sub_results_free(res); }
