@@ -79,10 +79,18 @@ bool dakara_check_passed(struct dakara_check_report err);
 // check file from filepath
 void dakara_check(char *filepath, dakara_check_results *res);
 
+// check instrumental file from filepath
+void dakara_check(char *filepath, dakara_check_results *res);
+
 // check file from AVIO
 void dakara_check_avio(size_t buffer_size, void *readable,
                        int (*read_packet)(void *, uint8_t *, int),
                        int64_t (*seek)(void *, int64_t, int), dakara_check_results *res);
+
+// check instrumental track from AVIO
+void dakara_check_inst_avio(size_t buffer_size, void *readable,
+                            int (*read_packet)(void *, uint8_t *, int),
+                            int64_t (*seek)(void *, int64_t, int), dakara_check_results *res);
 
 struct dakara_check_diagnostic dakara_check_get_diagnostic(struct dakara_check_report *report);
 void dakara_check_print_diagnostics(struct dakara_check_report report, char *filepath);

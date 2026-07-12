@@ -221,6 +221,12 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
   }
 }
 
+// ignore errors that are not relevant to instrumental tracks
+void dakara_check_inst_ignored_reports(dakara_check_results *res) {
+  res->report.no_video_stream = false;
+  res->report.no_duration = false;
+}
+
 void dakara_check(char *filepath, dakara_check_results *res) {
   AVFormatContext *s = nullptr;
   dakara_check_results_init(res);
@@ -237,6 +243,11 @@ void dakara_check(char *filepath, dakara_check_results *res) {
   }
 
   dakara_check_avf(s, res);
+}
+
+void dakara_check_inst(char *filepath, dakara_check_results *res) {
+  dakara_check(filepath, res);
+  dakara_check_inst_ignored_reports(res);
 }
 
 void dakara_check_avio(size_t buffer_size, void *readable,
@@ -281,6 +292,13 @@ void dakara_check_avio(size_t buffer_size, void *readable,
   defer { avformat_close_input(&fmt_ctx); }
 
   dakara_check_avf(fmt_ctx, res);
+}
+
+void dakara_check_inst_avio(size_t buffer_size, void *readable,
+                            int (*read_packet)(void *, uint8_t *, int),
+                            int64_t (*seek)(void *, int64_t, int), dakara_check_results *res) {
+  dakara_check_avio(buffer_size, readable, read_packet, seek, res);
+  dakara_check_inst_ignored_reports(res);
 }
 
 bool dakara_check_passed(struct dakara_check_report report) {
