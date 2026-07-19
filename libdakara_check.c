@@ -120,6 +120,7 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
   unsigned int aac_streams = 0;
 
   int64_t duration = 0;
+  int64_t audio_duration = 0;
 
   // needed for mpeg-ts files
   if (avformat_find_stream_info(s, nullptr) < 0) {
@@ -150,8 +151,8 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
       if (++audio_streams > 1) {
         res->report.too_many_audio_streams = true;
       }
-      if (duration <= 0)
-        duration = st->duration * st->time_base.num / st->time_base.den;
+      if (audio_duration <= 0)
+        audio_duration = st->duration * st->time_base.num / st->time_base.den;
       if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
         aac_streams++;
       } else {
@@ -177,6 +178,11 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
 
   if (audio_streams == 0)
     res->report.no_audio_stream = true;
+
+  // use audio stream duration when there is no video stream
+  if (audio_duration > 0 && video_streams == 0) {
+    duration = audio_duration;
+  }
 
   // if duration was not found in the streams
   if (duration <= 0) {
