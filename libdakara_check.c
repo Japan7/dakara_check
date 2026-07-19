@@ -134,14 +134,15 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
+      if (video_streams++ > 0) {
+        res->report.too_many_video_streams = true;
+      }
       if (st->disposition & AV_DISPOSITION_ATTACHED_PIC) {
+        res->report.attached_cover_image = true;
         break;
       }
       if (duration <= 0)
         duration = st->duration * st->time_base.num / st->time_base.den;
-      if (video_streams++ > 0) {
-        res->report.too_many_video_streams = true;
-      }
       st->discard = AVDISCARD_ALL;
       break;
     case AVMEDIA_TYPE_AUDIO:
@@ -149,6 +150,8 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
       if (++audio_streams > 1) {
         res->report.too_many_audio_streams = true;
       }
+      if (duration <= 0)
+        duration = st->duration * st->time_base.num / st->time_base.den;
       if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
         aac_streams++;
       } else {
@@ -250,6 +253,16 @@ void dakara_check_inst(char *filepath, dakara_check_results *res) {
   dakara_check_inst_ignored_reports(res);
 }
 
+// ignore errors that are not relevant to instrumental tracks
+void dakara_check_audio_ignored_reports(dakara_check_results *res) {
+  res->report.attached_cover_image = false;
+}
+
+void dakara_check_audio(char *filepath, dakara_check_results *res) {
+  dakara_check(filepath, res);
+  dakara_check_audio_ignored_reports(res);
+}
+
 void dakara_check_avio(size_t buffer_size, void *readable,
                        int (*read_packet)(void *, uint8_t *, int),
                        int64_t (*seek)(void *, int64_t, int), dakara_check_results *res) {
@@ -301,6 +314,13 @@ void dakara_check_inst_avio(size_t buffer_size, void *readable,
   dakara_check_inst_ignored_reports(res);
 }
 
+void dakara_check_audio_avio(size_t buffer_size, void *readable,
+                             int (*read_packet)(void *, uint8_t *, int),
+                             int64_t (*seek)(void *, int64_t, int), dakara_check_results *res) {
+  dakara_check_avio(buffer_size, readable, read_packet, seek, res);
+  dakara_check_audio_ignored_reports(res);
+}
+
 bool dakara_check_passed(struct dakara_check_report report) {
   return !(report.unknown_stream || report.lavc_aac_stream || report.too_many_video_streams ||
            report.too_many_audio_streams || report.internal_sub_stream ||
@@ -320,6 +340,13 @@ struct dakara_check_diagnostic dakara_check_get_diagnostic(struct dakara_check_r
     report->io_error = false;
     diagnostic.report_id = DC_IO_ERROR;
     diagnostic.message = "Failed to decode file.";
+    return diagnostic;
+  }
+
+  if (report->attached_cover_image) {
+    report->attached_cover_image = false;
+    diagnostic.report_id = DC_ATTACHED_COVER;
+    diagnostic.message = "Found a cover image in file it should be removed.";
     return diagnostic;
   }
 

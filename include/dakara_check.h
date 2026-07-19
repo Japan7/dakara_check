@@ -25,6 +25,7 @@ enum dakara_check_report_type : uint8_t {
   DC_NO_DURATION_FOUND,
   DC_GLOBAL_DURATION,
   DC_LAVC_AAC_STREAM,
+  DC_ATTACHED_COVER,
 };
 
 enum dakara_check_error_level : uint8_t {
@@ -65,6 +66,8 @@ struct dakara_check_report {
   bool no_audio_stream : 1;
   // ERROR: failed to open file
   bool io_error : 1;
+  // ERROR: found cover image
+  bool attached_cover_image : 1;
 };
 
 typedef struct dakara_check_results {
@@ -80,7 +83,10 @@ bool dakara_check_passed(struct dakara_check_report err);
 void dakara_check(char *filepath, dakara_check_results *res);
 
 // check instrumental file from filepath
-void dakara_check(char *filepath, dakara_check_results *res);
+void dakara_check_inst(char *filepath, dakara_check_results *res);
+
+// check audio only file from filepath
+void dakara_check_audio(char *filepath, dakara_check_results *res);
 
 // check file from AVIO
 void dakara_check_avio(size_t buffer_size, void *readable,
@@ -91,6 +97,11 @@ void dakara_check_avio(size_t buffer_size, void *readable,
 void dakara_check_inst_avio(size_t buffer_size, void *readable,
                             int (*read_packet)(void *, uint8_t *, int),
                             int64_t (*seek)(void *, int64_t, int), dakara_check_results *res);
+
+// check audio only file from AVIO
+void dakara_check_audio_avio(size_t buffer_size, void *readable,
+                             int (*read_packet)(void *, uint8_t *, int),
+                             int64_t (*seek)(void *, int64_t, int), dakara_check_results *res);
 
 struct dakara_check_diagnostic dakara_check_get_diagnostic(struct dakara_check_report *report);
 void dakara_check_print_diagnostics(struct dakara_check_report report, char *filepath);
