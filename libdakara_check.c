@@ -352,7 +352,7 @@ struct dakara_check_diagnostic dakara_check_get_diagnostic(struct dakara_check_r
   if (report->attached_cover_image) {
     report->attached_cover_image = false;
     diagnostic.report_id = DC_ATTACHED_COVER;
-    diagnostic.message = "Found a cover image in file it should be removed.";
+    diagnostic.message = "Found a cover image in file, it should be removed.";
     return diagnostic;
   }
 
