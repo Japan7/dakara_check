@@ -392,15 +392,6 @@ struct dakara_check_diagnostic dakara_check_get_diagnostic(struct dakara_check_r
     return diagnostic;
   }
 
-  if (report->lavc_aac_stream) {
-    report->lavc_aac_stream = false;
-    diagnostic.report_id = DC_LAVC_AAC_STREAM,
-    diagnostic.message =
-        "File contains a LAVC AAC audio stream from a version of FFmpeg that is known to cause "
-        "audio issues. Reencode the stream in opus or update your FFmpeg version.";
-    return diagnostic;
-  }
-
   if (report->no_duration) {
     report->no_duration = false;
     diagnostic.report_id = DC_NO_DURATION_FOUND;
@@ -409,6 +400,15 @@ struct dakara_check_diagnostic dakara_check_get_diagnostic(struct dakara_check_r
   }
 
   diagnostic.error_level = DC_WARNING;
+
+  if (report->lavc_aac_stream) {
+    report->lavc_aac_stream = false;
+    diagnostic.report_id = DC_LAVC_AAC_STREAM,
+    diagnostic.message =
+        "File contains a LAVC AAC audio stream from a version of FFmpeg that is known to cause "
+        "audio issues. Reencode the stream in opus or update your FFmpeg version.";
+    return diagnostic;
+  }
 
   if (report->global_duration) {
     report->global_duration = false;
