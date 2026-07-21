@@ -218,7 +218,6 @@ static void dakara_check_avf(AVFormatContext *s, dakara_check_results *res) {
       }
 
       if (s->streams[pkt->stream_index]->codecpar->codec_id != AV_CODEC_ID_AAC) {
-        fprintf(stderr, "not aac stream\n");
         continue;
       }
 
