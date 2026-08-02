@@ -23,6 +23,7 @@ deps = []
 deps += dependency('libavformat')
 deps += dependency('libavcodec')
 deps += dependency('libavutil')
+deps += dependency('libavfilter')
 deps += dependency(
     'libass',
     fallback: 'libass',

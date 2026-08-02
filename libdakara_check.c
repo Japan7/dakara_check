@@ -2,14 +2,20 @@
 #include <ass/ass.h>
 #include <ass/ass_types.h>
 #include <errno.h>
+#include <libavcodec/avcodec.h>
 #include <libavcodec/codec_id.h>
 #include <libavcodec/codec_par.h>
 #include <libavcodec/defs.h>
 #include <libavcodec/packet.h>
+#include <libavfilter/avfilter.h>
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 #include <libavutil/avutil.h>
+#include <libavutil/channel_layout.h>
 #include <libavutil/mem.h>
+#include <libavutil/opt.h>
+#include <libavutil/rational.h>
+#include <libavutil/samplefmt.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -712,4 +718,68 @@ void dakara_check_sub_print_diagnostics(struct dakara_check_sub_report report, c
   while ((diagnostic = dakara_check_sub_get_diagnostic(&report)).report_id != DC_DONE) {
     print_diagnostic(diagnostic, filepath);
   }
+}
+
+constexpr char LOUDNORM_GRAPH[] = "[in] loudnorm=print_format=summary:stats_file=- [out]";
+
+int dakara_check_loudnorm(AVCodecContext *dec_ctx, AVRational timebase) {
+  AVFilterGraph *filter_graph = avfilter_graph_alloc();
+  if (filter_graph == nullptr) {
+    return -1;
+  }
+  defer { avfilter_graph_free(&filter_graph); }
+
+  // create input
+  const AVFilter *abuffersrc = avfilter_get_by_name("abuffer");
+  AVFilterContext *buffersrc_ctx = avfilter_graph_alloc_filter(filter_graph, abuffersrc, "in");
+  if (buffersrc_ctx != nullptr) {
+    fprintf(stderr, "failed to create abuffer filter");
+    return -1;
+  }
+
+  if (av_opt_set_q(buffersrc_ctx, "time_base", timebase, 0) != 0) {
+    fprintf(stderr, "failed to set time_base of abuffersrc\n");
+    return -1;
+  }
+  if (av_opt_set_int(buffersrc_ctx, "sample_rate", dec_ctx->sample_rate, 0) != 0) {
+    fprintf(stderr, "failed to set sample rate of abuffersrc\n");
+    return -1;
+  }
+  if (av_opt_set_sample_fmt(buffersrc_ctx, "sample_fmt", dec_ctx->sample_fmt, 0) != 0) {
+    fprintf(stderr, "failed to set sample_fmt of abuffersrc\n");
+    return -1;
+  }
+  if (av_opt_set_chlayout(buffersrc_ctx, "channel_layout", &dec_ctx->ch_layout, 0) != 0) {
+    fprintf(stderr, "failed to set channel_layout of abuffersrc\n");
+    return -1;
+  }
+
+  AVFilterInOut *inputs = avfilter_inout_alloc();
+  defer { avfilter_inout_free(&inputs); }
+  inputs->name = av_strdup("in");
+  inputs->pad_idx = 0;
+  inputs->filter_ctx = buffersrc_ctx;
+  inputs->next = nullptr;
+
+  // create output
+  const AVFilter *anullsink = avfilter_get_by_name("anullsink");
+  AVFilterContext *anullsink_ctx = avfilter_graph_alloc_filter(filter_graph, anullsink, "out");
+
+  AVFilterInOut *outputs = avfilter_inout_alloc();
+  defer { avfilter_inout_free(&outputs); }
+  outputs->name = av_strdup("out");
+  outputs->pad_idx = 0;
+  outputs->filter_ctx = anullsink_ctx;
+  outputs->next = nullptr;
+
+  int ret = avfilter_graph_parse_ptr(filter_graph, LOUDNORM_GRAPH, &inputs, &outputs, nullptr);
+  if (ret < 0) {
+    fprintf(stderr, "failed to create loudnorm graph\n");
+    return ret;
+  }
+
+  while (true) {
+  }
+
+  return 0;
 }
