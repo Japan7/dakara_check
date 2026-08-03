@@ -516,10 +516,16 @@ int dakara_check_external_sub_file_for(char *filepath) {
  * check events of the current track
  */
 void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *res) {
-  unsigned long lyrics_len = strlen(res->lyrics) + 1;
+  unsigned long lyrics_len = 0;
+  if (res->lyrics != nullptr) {
+    lyrics_len = strlen(res->lyrics) + 1;
+  }
+
   char *line = nullptr;
   for (int i = 0; i < track->n_events; i++) {
     line = strdup(track->events[i].Text);
+    defer { free(line); }
+
     if (line == nullptr) {
       perror("failed to duplicate string");
       res->report.io_error = true;
@@ -587,13 +593,16 @@ void dakara_check_subtitle_events(ASS_Track *track, dakara_check_sub_results *re
     line[write_head] = '\0';
 
     lyrics_len += write_head + 1;
-    res->lyrics = realloc(res->lyrics, sizeof(char) * (lyrics_len));
+    char *new_lyrics = reallocarray(res->lyrics, (lyrics_len), sizeof(char));
+    if (new_lyrics == nullptr) {
+      res->report.mem_error = true;
+      return;
+    }
+    res->lyrics = new_lyrics;
 
     if (res->lyrics[0] != '\0')
       strcat(res->lyrics, "\n");
     strcat(res->lyrics, line);
-
-    free(line);
   }
 }
 
@@ -603,9 +612,18 @@ void dakara_check_subtitle_track(ASS_Track *track, dakara_check_sub_results *res
 
 dakara_check_sub_results *dakara_check_sub_results_init(void) {
   dakara_check_sub_results *res = malloc(sizeof(dakara_check_sub_results));
-  res->report.io_error = 0;
+  if (res == nullptr) {
+    return res;
+  }
+
+  res->report.io_error = false;
+  res->report.mem_error = false;
   res->lyrics = malloc(1);
-  res->lyrics[0] = '\0';
+  if (res->lyrics == nullptr) {
+    res->report.mem_error = true;
+  } else {
+    res->lyrics[0] = '\0';
+  }
 
   return res;
 }
@@ -643,7 +661,7 @@ dakara_check_sub_results *dakara_check_subtitle_file(char *filepath) {
   defer { ass_free_track(track); }
 
   res = dakara_check_sub_results_init();
-  if (res == nullptr) {
+  if (res == nullptr || res->report.mem_error) {
     perror("failed to allocate memory for results");
     return res;
   }

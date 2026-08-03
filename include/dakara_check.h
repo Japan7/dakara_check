@@ -110,6 +110,7 @@ int dakara_check_external_sub_file_for(char *filepath);
 
 struct dakara_check_sub_report {
   bool io_error : 1;
+  bool mem_error : 1;
 };
 
 bool dakara_check_sub_passed(struct dakara_check_sub_report);
